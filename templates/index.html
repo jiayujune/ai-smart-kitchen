@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Kitchen Recommender</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 24px;
+        }
+
+        .hero {
+            background: white;
+            border-radius: 18px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            color: #0f172a;
+        }
+
+        .hero p {
+            margin: 0;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 280px;
+            padding: 14px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        button {
+            padding: 14px 22px;
+            border: none;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .helper-text {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .results-title {
+            margin: 28px 0 18px 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .user-input-box {
+            background: #eff6ff;
+            border-left: 5px solid #2563eb;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 18px;
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            border-top: 6px solid #2563eb;
+        }
+
+        .recipe-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.1rem;
+            color: #111827;
+            line-height: 1.4;
+            text-transform: capitalize;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .badge {
+            background: #e0f2fe;
+            color: #075985;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .section-label {
+            font-weight: 700;
+            margin: 12px 0 6px;
+            color: #334155;
+        }
+
+        ul {
+            margin: 6px 0 0 18px;
+            padding: 0;
+            color: #475569;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        .empty {
+            background: white;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            color: #475569;
+        }
+
+        .footer-note {
+            margin-top: 28px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .input-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>AI Smart Kitchen Recommender</h1>
+            <p>
+                Enter the ingredients currently available in your kitchen, and the system will recommend recipes
+                based on ingredient matching, missing items, and calorie information.
+            </p>
+        </div>
+
+        <div class="form-card">
+            <form method="POST">
+                <label for="ingredients">Enter ingredients (comma-separated)</label>
+                <div class="input-row">
+                    <input
+                        type="text"
+                        id="ingredients"
+                        name="ingredients"
+                        value="{{ user_input }}"
+                        placeholder="egg, tomato, rice, onion"
+                    >
+                    <button type="submit">Get Recommendations</button>
+                </div>
+                <div class="helper-text">
+                    Example: egg, tomato, rice, onion
+                </div>
+            </form>
+        </div>
+
+        {% if user_input %}
+            <div class="results-title">Recommendation Results</div>
+            <div class="user-input-box">
+                <strong>Your ingredients:</strong> {{ user_input }}
+            </div>
+
+            {% if results %}
+                <div class="grid">
+                    {% for recipe in results %}
+                        <div class="recipe-card">
+                            <h3>{{ recipe.name }}</h3>
+
+                            <div class="meta">
+                                <span class="badge">Score: {{ recipe.score }}</span>
+                                <span class="badge">Matched: {{ recipe.matched_count }}</span>
+                                <span class="badge">Missing: {{ recipe.missing_count }}</span>
+                                <span class="badge">Calories: {{ recipe.calories }}</span>
+                            </div>
+
+                            <div class="section-label">Matched Ingredients</div>
+                            <ul>
+                                {% for item in recipe.matched_ingredients %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+
+                            <div class="section-label">Missing Ingredients</div>
+                            <ul>
+                                {% for item in recipe.missing_ingredients %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">
+                    No suitable recipes were found for the current ingredients. Try adding more ingredients.
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <div class="footer-note">
+            CSCI 630 Group Project · AI-Powered Smart Grocery & Nutrition Planner
+        </div>
+    </div>
+</body>
+</html>
