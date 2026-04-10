@@ -89,6 +89,16 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
+        select {
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            background: white;
+            color: #1f2937;
+        }
+
         button {
             padding: 14px 22px;
             border: none;
@@ -336,6 +346,18 @@
             border-color: #fdba74;
         }
 
+        .detail-link {
+            display: inline-block;
+            margin-top: 6px;
+            color: #2563eb;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .detail-link:hover {
+            text-decoration: underline;
+        }
+
         .empty {
             padding: 24px;
             color: #475569;
@@ -363,11 +385,83 @@
             color: #64748b;
         }
 
+        .sort-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .sort-note {
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
         .footer-note {
             margin-top: 28px;
             text-align: center;
             color: #64748b;
             font-size: 0.9rem;
+        }
+
+        .favorites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .favorite-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .favorite-card h4 {
+            margin: 0 0 8px;
+            text-transform: capitalize;
+            color: #0f172a;
+        }
+
+        .favorite-card p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
+        .staples-panel {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .inline-form {
+            display: inline-flex;
+            margin: 0;
+        }
+
+        .chip-with-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .chip-remove {
+            border: none;
+            background: transparent;
+            color: #2e7d32;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
         }
 
         .loading-overlay {
@@ -448,6 +542,14 @@
                         placeholder="egg, tomato, rice, onion"
                     >{{ user_input }}</textarea>
                 </div>
+                <div class="subsection-title">Sort Results By</div>
+                <div class="input-row">
+                    <select name="sort_mode" id="sort_mode">
+                        {% for value, label in sort_options.items() %}
+                            <option value="{{ value }}" {% if sort_mode == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <button class="submit-button" type="submit" id="submitButton">
                     <span class="button-label">Get Recommendations</span>
                     <span class="button-loading"><span class="spinner"></span>Loading...</span>
@@ -476,6 +578,10 @@
 
         {% if user_input %}
             <div class="section-title">Recommendation Results</div>
+            <div class="sort-row">
+                <span class="chip primary">Current Sort: {{ sort_options[sort_mode] }}</span>
+                <span class="sort-note">Switch sorting above to compare pantry fit, missing items, calories, or personalization.</span>
+            </div>
 
             {% if stats %}
                 <div class="summary-grid">
@@ -494,6 +600,10 @@
                     <div class="summary-card">
                         <span>Liked Recipes</span>
                         <strong>{{ stats.liked_count }}</strong>
+                    </div>
+                    <div class="summary-card">
+                        <span>Pantry Staples</span>
+                        <strong>{{ stats.staples_count }}</strong>
                     </div>
                 </div>
             {% endif %}
@@ -522,6 +632,57 @@
                 </div>
             {% endif %}
 
+            <div class="subsection-title">Pantry Staples</div>
+            <div class="form-card staples-panel" style="margin-bottom: 20px;">
+                <div class="helper-text" style="margin-top: 0;">
+                    These ingredients are treated as already available, so they will not show up in "Missing Ingredients".
+                </div>
+
+                {% if pantry_staples %}
+                    <div class="chip-row">
+                        {% for staple in pantry_staples %}
+                                <form class="inline-form" method="POST">
+                                    <input type="hidden" name="action" value="remove_staple">
+                                    <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                    <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                    <input type="hidden" name="staple" value="{{ staple }}">
+                                    <span class="chip-with-action">
+                                        {{ staple }}
+                                    <button class="chip-remove" type="submit">x</button>
+                                </span>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if staple_suggestions %}
+                    <div class="subsection-title" style="margin-top: 16px;">Suggested Staples</div>
+                    <div class="chip-row">
+                        {% for staple in staple_suggestions %}
+                            <form class="inline-form" method="POST">
+                                <input type="hidden" name="action" value="add_staple">
+                                <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                <input type="hidden" name="staple" value="{{ staple }}">
+                                <button class="chip-button" type="submit">+ {{ staple }}</button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if favorite_recipes %}
+                <div class="subsection-title">Saved Recipes</div>
+                <div class="favorites-grid">
+                    {% for recipe in favorite_recipes %}
+                        <div class="favorite-card">
+                            <h4>{{ recipe.name }}</h4>
+                            <p>Saved for quick access the next time you search.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             {% if results %}
                 <div class="grid">
                     {% for recipe in results %}
@@ -543,6 +704,7 @@
                                 <form method="POST">
                                     <input type="hidden" name="action" value="toggle_like">
                                     <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                    <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
                                     <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                                     <button class="small-button {% if recipe.is_liked %}active-like{% endif %}" type="submit">
                                         {% if recipe.is_liked %}Liked{% else %}Like{% endif %}
@@ -551,12 +713,17 @@
                                 <form method="POST">
                                     <input type="hidden" name="action" value="toggle_favorite">
                                     <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                    <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
                                     <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                                     <button class="small-button {% if recipe.is_favorite %}active-save{% endif %}" type="submit">
                                         {% if recipe.is_favorite %}Saved{% else %}Save{% endif %}
                                     </button>
                                 </form>
                             </div>
+
+                            <a class="detail-link" href="{{ url_for('recipe_detail', recipe_id=recipe.id, ingredients=user_input, sort_mode=sort_mode) }}">
+                                View Details
+                            </a>
 
                             <div class="section-label">Matched Ingredients</div>
                             <ul>

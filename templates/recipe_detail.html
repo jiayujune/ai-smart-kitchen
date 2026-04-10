@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ recipe.name }} | Smart Kitchen</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            color: #1f2937;
+        }
+        .page {
+            max-width: 980px;
+            margin: 36px auto;
+            padding: 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .back-link:hover { text-decoration: underline; }
+        h1 {
+            margin: 0 0 12px;
+            text-transform: capitalize;
+            color: #0f172a;
+        }
+        .subtitle {
+            margin: 0;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .chip-row, .nutrition-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .chip {
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .chip.match { background: #e8f5e9; color: #2e7d32; }
+        .chip.missing { background: #fff3e0; color: #b26a00; }
+        .chip.info { background: #dbeafe; color: #1d4ed8; }
+        .section-title {
+            margin: 0 0 12px;
+            font-size: 1.15rem;
+            color: #0f172a;
+        }
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .nutrition-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .nutrition-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .nutrition-item strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.15rem;
+            color: #111827;
+        }
+        ol {
+            margin: 0;
+            padding-left: 22px;
+            color: #475569;
+            line-height: 1.7;
+        }
+        li + li {
+            margin-top: 10px;
+        }
+        ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #475569;
+            line-height: 1.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <a class="back-link" href="{{ url_for('index', ingredients=user_input, sort_mode=sort_mode) }}">Back to results</a>
+
+        <section class="card">
+            <h1>{{ recipe.name }}</h1>
+            <p class="subtitle">
+                Recipe detail view for the current pantry search.
+                {% if user_input %}
+                    You came here from a search sorted by {{ sort_label }}.
+                {% endif %}
+            </p>
+        </section>
+
+        {% if user_input %}
+            <section class="card">
+                <h2 class="section-title">Pantry Match</h2>
+                {% if normalized_items %}
+                    <div class="chip-row" style="margin-bottom: 14px;">
+                        {% for item in normalized_items %}
+                            <span class="chip info">{{ item }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <h3 class="section-title" style="font-size: 1rem;">Matched Ingredients</h3>
+                {% if matched_items %}
+                    <div class="chip-row" style="margin-bottom: 18px;">
+                        {% for item in matched_items %}
+                            <span class="chip match">{{ item }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="subtitle" style="margin-bottom: 18px;">No direct matches from your current pantry.</p>
+                {% endif %}
+
+                <h3 class="section-title" style="font-size: 1rem;">Still Needed</h3>
+                {% if missing_items %}
+                    <div class="chip-row">
+                        {% for item in missing_items %}
+                            <span class="chip missing">{{ item }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="subtitle">You already have the key ingredients for this recipe.</p>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card">
+            <h2 class="section-title">Ingredients</h2>
+            <ul>
+                {% for item in recipe.ingredients %}
+                    <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2 class="section-title">Nutrition Snapshot</h2>
+            <div class="nutrition-grid">
+                {% for item in nutrition_items %}
+                    <div class="nutrition-item">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.value if item.value is not none else "N/A" }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="section-title">Steps</h2>
+            <ol>
+                {% for step in recipe.steps %}
+                    <li>{{ step }}</li>
+                {% endfor %}
+            </ol>
+        </section>
+    </div>
+</body>
+</html>

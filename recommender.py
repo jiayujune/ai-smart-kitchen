@@ -57,6 +57,11 @@ class SmartKitchenRecommender:
             "butter",
         }
 
+    def resolve_pantry_staples(self, user_profile: Optional[Dict]) -> Set[str]:
+        if user_profile and user_profile.get("pantry_staples"):
+            return set(user_profile["pantry_staples"])
+        return set(self.pantry_staples)
+
     def load_recipes(self, recipe_file: str) -> List[Dict]:
         with open(recipe_file, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -103,24 +108,26 @@ class SmartKitchenRecommender:
         self,
         user_ingredients: Set[str],
         recipe_ingredients: Set[str],
-    ) -> Tuple[float, float, List[str], List[str]]:
+        pantry_staples: Set[str],
+    ) -> Tuple[float, float, List[str], List[str], List[str]]:
         matched = sorted(user_ingredients.intersection(recipe_ingredients))
+        staple_matches = sorted(item for item in matched if item in pantry_staples)
         missing = sorted(
             item
             for item in recipe_ingredients.difference(user_ingredients)
-            if item not in self.pantry_staples
+            if item not in pantry_staples
         )
 
         if not recipe_ingredients:
-            return 0.0, 0.0, matched, missing
+            return 0.0, 0.0, matched, missing, staple_matches
 
-        essential_ingredients = recipe_ingredients.difference(self.pantry_staples)
+        essential_ingredients = recipe_ingredients.difference(pantry_staples)
         if not essential_ingredients:
             essential_ingredients = recipe_ingredients
 
         coverage = len(user_ingredients.intersection(essential_ingredients)) / len(essential_ingredients)
         overlap = len(matched) / len(user_ingredients) if user_ingredients else 0.0
-        return coverage, overlap, matched, missing
+        return coverage, overlap, matched, missing, staple_matches
 
     def is_reasonable_recipe_name(self, name: str) -> bool:
         if not name or len(name.strip()) < 3:
@@ -151,18 +158,35 @@ class SmartKitchenRecommender:
         matched_count: int,
         missing_count: int,
         health_label: str,
+        matched: List[str],
+        missing: List[str],
+        staple_matches: List[str],
         personalization_reasons: List[str],
     ) -> str:
         if matched_count >= 4 and missing_count <= 2:
-            base = f"Strong pantry fit with only a few extra items needed. {health_label} calorie level."
+            fit_message = "Strong pantry fit with only a few extra items needed."
         elif matched_count >= 3:
-            base = f"Good ingredient overlap for a practical weeknight option. {health_label} calorie level."
+            fit_message = "Good ingredient overlap for a practical weeknight option."
         else:
-            base = f"Partial ingredient fit if you are open to adding a few items. {health_label} calorie level."
+            fit_message = "Partial ingredient fit if you are open to adding a few items."
 
+        reason_parts = []
+        if matched:
+            top_matches = ", ".join(matched[:3])
+            reason_parts.append(f"Works well with {top_matches}")
+        if missing:
+            top_missing = ", ".join(missing[:2])
+            reason_parts.append(f"you only need {top_missing}")
+        if staple_matches:
+            top_staples = ", ".join(staple_matches[:2])
+            reason_parts.append(f"and uses your pantry staples like {top_staples}")
         if personalization_reasons:
-            return f"{base} Personalized boost: {', '.join(personalization_reasons)}."
-        return base
+            reason_parts.append(f"Personalized because it was {', '.join(personalization_reasons)}")
+
+        reason_text = ". ".join(reason_parts)
+        if reason_text:
+            return f"{fit_message} {reason_text}. {health_label} calorie level."
+        return f"{fit_message} {health_label} calorie level."
 
     def compute_base_score(
         self,
@@ -239,12 +263,14 @@ class SmartKitchenRecommender:
         min_matched_count: int = 2,
         max_missing_count: int = 5,
         user_profile: Optional[Dict] = None,
+        sort_mode: str = "best_match",
     ) -> List[Dict]:
         normalized_user_ingredients = self.normalize_ingredients(user_ingredients)
         if not normalized_user_ingredients:
             return []
 
         recommendations = []
+        pantry_staples = self.resolve_pantry_staples(user_profile)
         liked = set(user_profile.get("liked_recipes", [])) if user_profile else set()
         favorites = set(user_profile.get("favorites", [])) if user_profile else set()
 
@@ -256,7 +282,11 @@ class SmartKitchenRecommender:
                 continue
 
             recipe_ingredients = self.normalize_ingredients(recipe.get("ingredients", []))
-            coverage, overlap, matched, missing = self.compute_match_details(normalized_user_ingredients, recipe_ingredients)
+            coverage, overlap, matched, missing, staple_matches = self.compute_match_details(
+                normalized_user_ingredients,
+                recipe_ingredients,
+                pantry_staples,
+            )
 
             matched_count = len(matched)
             missing_count = len(missing)
@@ -306,10 +336,51 @@ class SmartKitchenRecommender:
                         matched_count=matched_count,
                         missing_count=missing_count,
                         health_label=health_label,
+                        matched=matched,
+                        missing=missing,
+                        staple_matches=staple_matches,
                         personalization_reasons=personalization_reasons,
                     ),
                 }
             )
+
+        recommendations = self.sort_recommendations(recommendations, sort_mode)
+
+        return recommendations[:top_k]
+
+    def sort_recommendations(self, recommendations: List[Dict], sort_mode: str) -> List[Dict]:
+        if sort_mode == "fewest_missing":
+            recommendations.sort(
+                key=lambda item: (
+                    item["missing_count"],
+                    -item["matched_count"],
+                    -item["final_score"],
+                    -item["calories"] if item["calories"] is not None else 0,
+                )
+            )
+            return recommendations
+
+        if sort_mode == "lowest_calories":
+            recommendations.sort(
+                key=lambda item: (
+                    item["calories"] if item["calories"] is not None else float("inf"),
+                    -item["matched_count"],
+                    -item["final_score"],
+                )
+            )
+            return recommendations
+
+        if sort_mode == "most_personalized":
+            recommendations.sort(
+                key=lambda item: (
+                    item["personalization_bonus"],
+                    item["final_score"],
+                    item["matched_count"],
+                    -item["missing_count"],
+                ),
+                reverse=True,
+            )
+            return recommendations
 
         recommendations.sort(
             key=lambda item: (
@@ -320,8 +391,7 @@ class SmartKitchenRecommender:
             ),
             reverse=True,
         )
-
-        return recommendations[:top_k]
+        return recommendations
 
 
 if __name__ == "__main__":

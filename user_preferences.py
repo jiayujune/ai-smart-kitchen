@@ -19,6 +19,15 @@ class UserPreferenceStore:
             "search_history": [],
             "recipe_history": [],
             "recipe_feedback": {},
+            "pantry_staples": [
+                "salt",
+                "pepper",
+                "oil",
+                "water",
+                "flour",
+                "sugar",
+                "butter",
+            ],
         }
 
     def load(self) -> Dict:
@@ -129,3 +138,24 @@ class UserPreferenceStore:
     def top_ingredients(self, limit: int = 10) -> List[str]:
         counts = Counter(self.data.get("ingredient_counts", {}))
         return [ingredient for ingredient, _ in counts.most_common(limit)]
+
+    def pantry_staples(self) -> List[str]:
+        return list(self.data.get("pantry_staples", []))
+
+    def add_pantry_staple(self, ingredient: str) -> None:
+        cleaned = ingredient.strip().lower()
+        if not cleaned:
+            return
+
+        staples = self.data.setdefault("pantry_staples", [])
+        if cleaned not in staples:
+            staples.append(cleaned)
+            staples.sort()
+            self.save()
+
+    def remove_pantry_staple(self, ingredient: str) -> None:
+        cleaned = ingredient.strip().lower()
+        staples = self.data.setdefault("pantry_staples", [])
+        if cleaned in staples:
+            staples.remove(cleaned)
+            self.save()
