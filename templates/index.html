@@ -501,6 +501,150 @@
             color: #475569;
         }
 
+        .chatbox {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: min(360px, calc(100vw - 32px));
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+            z-index: 30;
+        }
+
+        .chatbox-header {
+            padding: 14px 16px;
+            background: #2563eb;
+            color: white;
+            font-weight: 700;
+        }
+
+        .chatbox-body {
+            padding: 14px;
+            max-height: 320px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            font-size: 0.93rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .chat-message.user {
+            background: #dbeafe;
+            color: #1e3a8a;
+            margin-left: 28px;
+        }
+
+        .chat-message.assistant {
+            background: white;
+            color: #334155;
+            margin-right: 28px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chatbox-footer {
+            padding: 12px;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .chat-input {
+            width: 100%;
+            min-height: 76px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            resize: vertical;
+            font: inherit;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        .chat-key-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font: inherit;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-actions button {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 0.92rem;
+        }
+
+        .chat-muted {
+            color: #64748b;
+            font-size: 0.86rem;
+            margin: 0 0 10px;
+        }
+
+        .chat-key-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .chat-key-row button {
+            flex: 0 0 auto;
+            padding: 10px 12px;
+            font-size: 0.86rem;
+            white-space: nowrap;
+        }
+
+        .chat-key-status {
+            color: #64748b;
+            font-size: 0.82rem;
+            margin: 0 0 10px;
+        }
+
+        .chat-key-status.error {
+            color: #b91c1c;
+        }
+
+        .chat-key-status.success {
+            color: #166534;
+        }
+
+        .quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .quick-prompt {
+            border: none;
+            background: #e0f2fe;
+            color: #075985;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .quick-prompt:hover {
+            background: #bae6fd;
+        }
+
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -517,6 +661,11 @@
 
             .submit-button {
                 width: 100%;
+            }
+
+            .chatbox {
+                right: 16px;
+                bottom: 16px;
             }
         }
     </style>
@@ -760,6 +909,36 @@
         </div>
     </div>
 
+    <div class="chatbox">
+        <div class="chatbox-header">Kitchen Assistant</div>
+        <div class="chatbox-body" id="chatMessages">
+            <div class="chat-message assistant">
+                Ask about substitutions, lighter meals, what to cook first, or which recommendation fits your pantry best.
+            </div>
+        </div>
+        <div class="chatbox-footer">
+            <p class="chat-muted">Uses your current ingredients and recommendations as context.</p>
+            <div class="chat-key-row">
+                <input class="chat-key-input" id="chatApiKey" type="password" placeholder="Enter Groq API key">
+                <button type="button" id="saveApiKeyButton">Save API Key</button>
+            </div>
+            <p class="chat-key-status" id="chatKeyStatus">The key is saved only in this browser on this device.</p>
+            <div class="quick-prompts">
+                <button type="button" class="quick-prompt" data-chat-prompt="What can I cook in 20 minutes with these ingredients?">20-minute ideas</button>
+                <button type="button" class="quick-prompt" data-chat-prompt="Which recipe needs the fewest extra ingredients?">Fewest extra ingredients</button>
+                <button type="button" class="quick-prompt" data-chat-prompt="Give me a lighter, healthier option.">Healthier option</button>
+                <button type="button" class="quick-prompt" data-chat-prompt="How can I substitute the missing ingredients?">Ingredient substitutions</button>
+                <button type="button" class="quick-prompt" data-chat-prompt="Which recommendation is best for a beginner?">Best for beginners</button>
+                <button type="button" class="quick-prompt" data-chat-prompt="What can I make without buying anything else?">Use only what I have</button>
+            </div>
+            <textarea class="chat-input" id="chatInput" placeholder="What can I make in 20 minutes with these ingredients?"></textarea>
+            <div class="chat-actions">
+                <button type="button" id="chatSendButton">Send</button>
+                <button type="button" id="chatResetButton">Clear</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const form = document.getElementById("ingredientForm");
         const textarea = document.getElementById("ingredients");
@@ -767,6 +946,49 @@
         const overlay = document.getElementById("loadingOverlay");
         const exampleButtons = document.querySelectorAll("[data-example]");
         const ingredientButtons = document.querySelectorAll("[data-ingredient]");
+        const chatMessages = document.getElementById("chatMessages");
+        const chatInput = document.getElementById("chatInput");
+        const chatSendButton = document.getElementById("chatSendButton");
+        const chatResetButton = document.getElementById("chatResetButton");
+        const chatApiKey = document.getElementById("chatApiKey");
+        const saveApiKeyButton = document.getElementById("saveApiKeyButton");
+        const chatKeyStatus = document.getElementById("chatKeyStatus");
+        const currentSortMode = document.getElementById("sort_mode");
+        const quickPromptButtons = document.querySelectorAll("[data-chat-prompt]");
+        const apiKeyStorageKey = "smart-kitchen-groq-api-key";
+
+        function setKeyStatus(message, variant = "") {
+            if (!chatKeyStatus) {
+                return;
+            }
+
+            chatKeyStatus.textContent = message;
+            chatKeyStatus.classList.remove("error", "success");
+            if (variant) {
+                chatKeyStatus.classList.add(variant);
+            }
+        }
+
+        function getSavedApiKey() {
+            try {
+                return window.localStorage.getItem(apiKeyStorageKey) || "";
+            } catch (err) {
+                return "";
+            }
+        }
+
+        function saveApiKeyLocally(value) {
+            try {
+                if (value) {
+                    window.localStorage.setItem(apiKeyStorageKey, value);
+                } else {
+                    window.localStorage.removeItem(apiKeyStorageKey);
+                }
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
 
         function appendIngredient(value) {
             if (!textarea || !value) {
@@ -787,6 +1009,57 @@
             textarea.focus();
         }
 
+        function appendChatMessage(role, text) {
+            if (!chatMessages) {
+                return;
+            }
+
+            const node = document.createElement("div");
+            node.className = `chat-message ${role}`;
+            node.textContent = text;
+            chatMessages.appendChild(node);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const message = chatInput?.value.trim();
+            if (!message) {
+                return;
+            }
+
+            appendChatMessage("user", message);
+            chatInput.value = "";
+            chatSendButton.disabled = true;
+            chatSendButton.textContent = "Sending...";
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        message,
+                        ingredients: textarea?.value || "",
+                        sort_mode: currentSortMode?.value || "best_match",
+                        api_key: chatApiKey?.value || "",
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    appendChatMessage("assistant", data.error || "Something went wrong while contacting the assistant.");
+                } else {
+                    appendChatMessage("assistant", data.reply);
+                }
+            } catch (err) {
+                appendChatMessage("assistant", "Unable to reach the chat assistant right now.");
+            } finally {
+                chatSendButton.disabled = false;
+                chatSendButton.textContent = "Send";
+            }
+        }
+
         exampleButtons.forEach((button) => {
             button.addEventListener("click", () => {
                 if (textarea) {
@@ -798,6 +1071,80 @@
 
         ingredientButtons.forEach((button) => {
             button.addEventListener("click", () => appendIngredient(button.dataset.ingredient || ""));
+        });
+
+        chatSendButton?.addEventListener("click", sendChatMessage);
+        chatInput?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        quickPromptButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                if (!chatInput) {
+                    return;
+                }
+
+                const currentKey = chatApiKey?.value.trim() || getSavedApiKey();
+                if (!currentKey) {
+                    setKeyStatus("Save your Groq API key before using the assistant.", "error");
+                    chatApiKey?.focus();
+                    return;
+                }
+
+                chatInput.value = button.dataset.chatPrompt || "";
+                sendChatMessage();
+            });
+        });
+
+        if (chatApiKey) {
+            chatApiKey.value = getSavedApiKey();
+            if (chatApiKey.value) {
+                setKeyStatus("API key loaded from this browser's local storage.", "success");
+            }
+        }
+
+        saveApiKeyButton?.addEventListener("click", () => {
+            if (!chatApiKey) {
+                return;
+            }
+
+            const value = chatApiKey.value.trim();
+            if (!value) {
+                saveApiKeyLocally("");
+                saveApiKeyButton.textContent = "Save API Key";
+                setKeyStatus("Please enter a Groq API key first.", "error");
+                return;
+            }
+
+            const saved = saveApiKeyLocally(value);
+            if (saved) {
+                saveApiKeyButton.textContent = "Saved";
+                setKeyStatus("API key saved locally. You will not need to re-enter it next time.", "success");
+            } else {
+                setKeyStatus("Unable to save the API key in this browser.", "error");
+            }
+        });
+
+        chatApiKey?.addEventListener("input", () => {
+            if (saveApiKeyButton) {
+                saveApiKeyButton.textContent = "Save API Key";
+            }
+        });
+
+        chatResetButton?.addEventListener("click", async () => {
+            if (chatMessages) {
+                chatMessages.innerHTML = "";
+                appendChatMessage("assistant", "Chat cleared. Ask about substitutions, timing, or which recipe fits you best.");
+            }
+
+            try {
+                await fetch("/chat/reset", { method: "POST" });
+            } catch (err) {
+                console.error(err);
+            }
         });
 
         if (form && textarea && submitButton && overlay) {

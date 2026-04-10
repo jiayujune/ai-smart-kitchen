@@ -1,11 +1,15 @@
+import json
+import os
 from typing import Dict, List
+from urllib import error, request as urlrequest
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, jsonify, render_template, request, session
 
 from recommender import SmartKitchenRecommender
 from user_preferences import UserPreferenceStore
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "smart-kitchen-dev-secret")
 recommender = SmartKitchenRecommender("recipes_clean.json")
 preferences = UserPreferenceStore("user_profile.json")
 
@@ -41,6 +45,9 @@ SORT_OPTIONS = {
     "most_personalized": "Most Personalized",
 }
 
+CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
+CHAT_HISTORY_LIMIT = 8
+
 NUTRITION_LABELS = [
     ("Calories", 0),
     ("Total Fat", 1),
@@ -62,6 +69,61 @@ def build_nutrition_items(nutrition: List) -> List[Dict]:
         value = nutrition[index] if isinstance(nutrition, list) and len(nutrition) > index else None
         items.append({"label": label, "value": value})
     return items
+
+
+def build_chat_context(user_input: str, sort_mode: str, results: List[Dict], profile: Dict) -> str:
+    normalized_items = sorted(recommender.normalize_ingredients(parse_ingredients(user_input)))
+    pantry_staples = profile.get("pantry_staples", [])
+    top_results = []
+    for item in results[:5]:
+        top_results.append(
+            f"- {item['name']} | match={item['match_percent']}% | missing={item['missing_count']} | calories={item['calories']} | why={item['explanation']}"
+        )
+
+    result_block = "\n".join(top_results) if top_results else "- No strong results yet."
+    return (
+        "You are a helpful Smart Kitchen assistant inside a recipe recommendation app. "
+        "Only answer about meal ideas, recipe tradeoffs, pantry usage, substitutions, nutrition, "
+        "and what the user can cook from their kitchen.\n\n"
+        f"Current available ingredients: {', '.join(normalized_items) if normalized_items else 'None provided'}\n"
+        f"Current pantry staples: {', '.join(pantry_staples) if pantry_staples else 'None configured'}\n"
+        f"Current sort mode: {SORT_OPTIONS.get(sort_mode, 'Best Match')}\n"
+        f"Current top recommendations:\n{result_block}\n\n"
+        "When possible, reference the recommendations already on screen. Keep answers concise, practical, and cooking-focused."
+    )
+
+
+def call_openai_chat(messages: List[Dict], api_key_override: str = "") -> str:
+    api_key = api_key_override.strip() or os.environ.get("GROQ_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("Missing Groq API key. Add one in the Kitchen Assistant or set GROQ_API_KEY.")
+
+    payload = {
+        "model": CHAT_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+    }
+    req = urlrequest.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "SmartKitchenAssistant/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlrequest.urlopen(req, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Groq API error: {detail}") from exc
+    except error.URLError as exc:
+        raise RuntimeError("Unable to reach the Groq API from this environment.") from exc
+
+    return data["choices"][0]["message"]["content"].strip()
 
 
 def build_results(user_input: str, sort_mode: str) -> Dict:
@@ -170,6 +232,55 @@ def index():
         staple_suggestions=staple_suggestions,
         favorite_recipes=favorite_recipes,
     )
+
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    payload = request.get_json(silent=True) or {}
+    user_message = (payload.get("message") or "").strip()
+    user_input = (payload.get("ingredients") or "").strip()
+    api_key_override = (payload.get("api_key") or "").strip()
+    sort_mode = (payload.get("sort_mode") or "best_match").strip()
+    if sort_mode not in SORT_OPTIONS:
+        sort_mode = "best_match"
+
+    if not user_message:
+        return jsonify({"error": "Message is required."}), 400
+
+    page_data = build_results(user_input, sort_mode)
+    profile = page_data["profile"]
+    chat_history = session.get("chat_history", [])
+
+    system_prompt = build_chat_context(
+        user_input=user_input,
+        sort_mode=sort_mode,
+        results=page_data["results"],
+        profile=profile,
+    )
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(chat_history[-CHAT_HISTORY_LIMIT:])
+    messages.append({"role": "user", "content": user_message})
+
+    try:
+        assistant_text = call_openai_chat(messages, api_key_override=api_key_override)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    chat_history.extend(
+        [
+            {"role": "user", "content": user_message},
+            {"role": "assistant", "content": assistant_text},
+        ]
+    )
+    session["chat_history"] = chat_history[-CHAT_HISTORY_LIMIT:]
+
+    return jsonify({"reply": assistant_text})
+
+
+@app.route("/chat/reset", methods=["POST"])
+def reset_chat():
+    session.pop("chat_history", None)
+    return jsonify({"ok": True})
 
 
 @app.route("/recipe/<int:recipe_id>")
