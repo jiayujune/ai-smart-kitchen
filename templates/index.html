@@ -3,277 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Kitchen Recommender</title>
+    <title>Smart Kitchen Recommender</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-            color: #1f2937;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 24px;
-        }
-
-        .hero {
-            background: white;
-            border-radius: 18px;
-            padding: 32px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
-
-        .hero h1 {
-            margin: 0 0 10px 0;
-            font-size: 2rem;
-            color: #0f172a;
-        }
-
-        .hero p {
-            margin: 0;
-            color: #475569;
-            line-height: 1.6;
-        }
-
-        .form-card {
-            background: white;
-            border-radius: 18px;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-weight: 700;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            min-width: 280px;
-            padding: 14px 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        input[type="text"]:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-        }
-
-        button {
-            padding: 14px 22px;
-            border: none;
-            border-radius: 12px;
-            background: #2563eb;
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s ease;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        .helper-text {
-            margin-top: 10px;
-            color: #64748b;
-            font-size: 0.95rem;
-        }
-
-        .results-title {
-            margin: 28px 0 18px 0;
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .user-input-box {
-            background: #eff6ff;
-            border-left: 5px solid #2563eb;
-            padding: 14px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            color: #1e3a8a;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 18px;
-        }
-
-        .recipe-card {
-            background: white;
-            border-radius: 18px;
-            padding: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            border-top: 6px solid #2563eb;
-        }
-
-        .recipe-card h3 {
-            margin: 0 0 12px 0;
-            font-size: 1.1rem;
-            color: #111827;
-            line-height: 1.4;
-            text-transform: capitalize;
-        }
-
-        .meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-
-        .badge {
-            background: #e0f2fe;
-            color: #075985;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 0.88rem;
-            font-weight: 700;
-        }
-
-        .section-label {
-            font-weight: 700;
-            margin: 12px 0 6px;
-            color: #334155;
-        }
-
-        ul {
-            margin: 6px 0 0 18px;
-            padding: 0;
-            color: #475569;
-        }
-
-        li {
-            margin-bottom: 4px;
-        }
-
-        .empty {
-            background: white;
-            border-radius: 18px;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            color: #475569;
-        }
-
-        .footer-note {
-            margin-top: 28px;
-            text-align: center;
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 600px) {
-            .hero h1 {
-                font-size: 1.6rem;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            .input-row {
-                flex-direction: column;
-            }
-        }
+        :root { --bg:#f6efe4; --paper:rgba(255,250,242,.92); --card:#fffaf4; --text:#241d19; --muted:#786c63; --line:rgba(91,68,49,.14); --accent:#c65d2e; --success:#497a57; --rose:#b24b63; --warn:#af6d1f; --shadow:0 20px 50px rgba(70,44,24,.12); }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:"Trebuchet MS","Segoe UI",sans-serif; color:var(--text); background:linear-gradient(160deg,#f8f1e7 0%,#efe6d6 55%,#e7dcc8 100%); }
+        body.loading { overflow:hidden; }
+        @keyframes rise { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+        @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        @keyframes pulse { 0%,100% { transform:scale(1); opacity:.82; } 50% { transform:scale(1.08); opacity:1; } }
+        .page { max-width:1240px; margin:0 auto; padding:28px 18px 48px; animation:rise .6s ease both; }
+        .hero, .panel { background:var(--paper); border:1px solid var(--line); border-radius:26px; box-shadow:var(--shadow); }
+        .hero { padding:28px; margin-bottom:22px; display:grid; grid-template-columns:1.4fr 1fr; gap:20px; }
+        .eyebrow { display:inline-block; padding:8px 12px; border-radius:999px; background:rgba(198,93,46,.1); color:#8a3f1c; font-size:.82rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+        h1 { margin:16px 0 12px; font-size:clamp(2.1rem,5vw,4.3rem); line-height:.95; }
+        p { line-height:1.6; }
+        .muted { color:var(--muted); }
+        .hero-card { background:rgba(255,255,255,.72); border:1px solid rgba(91,68,49,.08); border-radius:22px; padding:20px; }
+        .layout { display:grid; grid-template-columns:340px 1fr; gap:22px; }
+        .side { display:grid; gap:18px; align-content:start; }
+        .panel { padding:22px; animation:rise .7s ease both; }
+        .title { margin:0 0 10px; font-size:1.25rem; }
+        textarea { width:100%; min-height:132px; padding:14px 16px; border-radius:18px; border:1px solid rgba(91,68,49,.18); background:#fff; font:inherit; resize:vertical; outline:none; }
+        textarea:focus { border-color:rgba(198,93,46,.8); box-shadow:0 0 0 4px rgba(198,93,46,.1); }
+        .cta { width:100%; margin-top:16px; padding:14px 18px; border:0; border-radius:16px; background:linear-gradient(135deg,var(--accent),#d07e31); color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+        .cta:disabled { opacity:.9; cursor:wait; }
+        .cta-loading { display:none; gap:10px; align-items:center; justify-content:center; }
+        .is-loading .cta-label { display:none; }
+        .is-loading .cta-loading { display:inline-flex; }
+        .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+        .chip-list, .badge-row, .ingredient-list, .actions, .stats { display:flex; flex-wrap:wrap; gap:10px; }
+        .chip-list { margin-top:14px; }
+        .chip-btn, .chip-static, .badge, .mini-pill, .action-btn { border-radius:999px; padding:8px 12px; font:inherit; font-size:.88rem; }
+        .chip-btn { border:0; background:rgba(245,197,122,.28); color:#8a3f1c; cursor:pointer; }
+        .chip-static { background:rgba(73,122,87,.12); color:var(--success); font-weight:700; }
+        .mini-stack { display:grid; gap:10px; }
+        .mini { background:rgba(255,255,255,.75); border:1px solid rgba(91,68,49,.1); border-radius:18px; padding:13px; }
+        .mini strong { display:block; margin-bottom:4px; }
+        .mini small { color:var(--muted); }
+        .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+        .stat { background:rgba(255,255,255,.74); border:1px solid rgba(91,68,49,.1); border-radius:18px; padding:16px; }
+        .stat label { display:block; color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; }
+        .stat strong { display:block; margin-top:8px; font-size:1.7rem; }
+        .recipes { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; }
+        .recipe { background:linear-gradient(180deg,#fff, #fbf3e8); border:1px solid rgba(91,68,49,.1); border-radius:22px; padding:18px; animation:rise .55s ease forwards; }
+        .top { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+        .top h3 { margin:0; font-size:1.18rem; text-transform:capitalize; line-height:1.3; }
+        .rank { min-width:50px; height:50px; display:grid; place-items:center; border-radius:18px; background:rgba(198,93,46,.12); color:#8a3f1c; font-weight:900; }
+        .badge { background:rgba(31,26,23,.06); }
+        .strong { background:rgba(73,122,87,.14); color:var(--success); }
+        .warn { background:rgba(175,109,31,.12); color:var(--warn); }
+        .persona { background:rgba(178,75,99,.11); color:var(--rose); }
+        .section { margin:0 0 8px; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:#8a3f1c; }
+        .mini-pill.good { background:rgba(73,122,87,.14); color:var(--success); }
+        .mini-pill.missing { background:rgba(198,93,46,.1); color:#8a3f1c; }
+        .action-btn { border:1px solid rgba(91,68,49,.12); background:rgba(255,255,255,.74); cursor:pointer; }
+        .action-btn.liked { background:rgba(178,75,99,.1); color:var(--rose); }
+        .action-btn.favorited { background:rgba(198,93,46,.12); color:#8a3f1c; }
+        .empty { padding:34px; border:1px dashed rgba(91,68,49,.2); border-radius:24px; background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(248,238,224,.72)); text-align:center; }
+        .overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(34,24,18,.32); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40; }
+        .overlay.active { opacity:1; pointer-events:auto; }
+        .loading-card { width:min(420px,100%); padding:28px 24px; border-radius:24px; background:rgba(255,250,242,.96); border:1px solid rgba(91,68,49,.12); box-shadow:var(--shadow); text-align:center; }
+        .orb { width:52px; height:52px; margin:0 auto 16px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #f5c57a, var(--accent)); animation:pulse 1.2s ease-in-out infinite; }
+        .history-btn { width:100%; text-align:left; border:1px solid rgba(91,68,49,.1); background:rgba(255,255,255,.76); border-radius:16px; padding:12px 14px; font:inherit; cursor:pointer; }
+        .footer { margin-top:22px; color:var(--muted); text-align:center; font-size:.9rem; }
+        @media (max-width:980px) { .hero, .layout { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:640px) { .page { padding:16px 12px 32px; } .hero, .panel { padding:18px; } .stats, .recipes { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1>AI Smart Kitchen Recommender</h1>
-            <p>
-                Enter the ingredients currently available in your kitchen, and the system will recommend recipes
-                based on ingredient matching, missing items, and calorie information.
-            </p>
-        </div>
-
-        <div class="form-card">
-            <form method="POST">
-                <label for="ingredients">Enter ingredients (comma-separated)</label>
-                <div class="input-row">
-                    <input
-                        type="text"
-                        id="ingredients"
-                        name="ingredients"
-                        value="{{ user_input }}"
-                        placeholder="egg, tomato, rice, onion"
-                    >
-                    <button type="submit">Get Recommendations</button>
-                </div>
-                <div class="helper-text">
-                    Example: egg, tomato, rice, onion
-                </div>
-            </form>
-        </div>
-
-        {% if user_input %}
-            <div class="results-title">Recommendation Results</div>
-            <div class="user-input-box">
-                <strong>Your ingredients:</strong> {{ user_input }}
+    <div class="page">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">Personalized Pantry Intelligence</div>
+                <h1>Turn your pantry habits into smarter recipe recommendations.</h1>
+                <p class="muted">This version learns from frequent ingredients, likes, favorites, and recent searches, then blends those signals into recipe ranking.</p>
             </div>
+            <div class="hero-card">
+                <h3 class="title">What the recommender learns</h3>
+                <p class="muted">Ingredients you search often, recipes you like, dishes you save, and repeated patterns from your recent kitchen history.</p>
+            </div>
+        </section>
 
-            {% if results %}
-                <div class="grid">
-                    {% for recipe in results %}
-                        <div class="recipe-card">
-                            <h3>{{ recipe.name }}</h3>
+        <main class="layout">
+            <aside class="side">
+                <section class="panel">
+                    <h2 class="title">Try your pantry</h2>
+                    <p class="muted">Enter ingredients separated by commas. The ranking will adapt as you use the app more.</p>
+                    <form method="POST" id="ingredientForm">
+                        <input type="hidden" name="action" value="search">
+                        <label for="ingredients">Available ingredients</label>
+                        <textarea id="ingredients" name="ingredients" placeholder="egg, tomato, rice, onion">{{ user_input }}</textarea>
+                        <button class="cta" type="submit" id="submitButton">
+                            <span class="cta-label">Get Recipe Recommendations</span>
+                            <span class="cta-loading"><span class="spinner"></span>Finding recipes...</span>
+                        </button>
+                    </form>
+                    <div class="chip-list">
+                        {% for example in example_ingredients %}
+                            <button class="chip-btn" type="button" data-example="{{ example }}">{{ example }}</button>
+                        {% endfor %}
+                    </div>
+                </section>
 
-                            <div class="meta">
-                                <span class="badge">Score: {{ recipe.score }}</span>
-                                <span class="badge">Matched: {{ recipe.matched_count }}</span>
-                                <span class="badge">Missing: {{ recipe.missing_count }}</span>
-                                <span class="badge">Calories: {{ recipe.calories }}</span>
-                            </div>
+                <section class="panel">
+                    <h3 class="title">Quick Ingredients</h3>
+                    <p class="muted">One-click ingredients learned from your past searches.</p>
+                    <div class="chip-list">
+                        {% if quick_ingredients %}
+                            {% for ingredient in quick_ingredients %}
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="use_quick_ingredient">
+                                    <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                    <input type="hidden" name="ingredient" value="{{ ingredient }}">
+                                    <button class="chip-btn" type="submit">+ {{ ingredient }}</button>
+                                </form>
+                            {% endfor %}
+                        {% else %}
+                            <span class="chip-static">Search a few times to train this area</span>
+                        {% endif %}
+                    </div>
+                </section>
 
-                            <div class="section-label">Matched Ingredients</div>
-                            <ul>
-                                {% for item in recipe.matched_ingredients %}
-                                    <li>{{ item }}</li>
-                                {% endfor %}
-                            </ul>
+                <section class="panel">
+                    <h3 class="title">Recent Searches</h3>
+                    <div class="mini-stack">
+                        {% if recent_searches %}
+                            {% for item in recent_searches %}
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="search">
+                                    <input type="hidden" name="ingredients" value="{{ item.label }}">
+                                    <button class="history-btn" type="submit">
+                                        <strong>{{ item.label }}</strong>
+                                        <small>{{ item.timestamp }}</small>
+                                    </button>
+                                </form>
+                            {% endfor %}
+                        {% else %}
+                            <div class="mini"><small>Your search history will appear here.</small></div>
+                        {% endif %}
+                    </div>
+                </section>
 
-                            <div class="section-label">Missing Ingredients</div>
-                            <ul>
-                                {% for item in recipe.missing_ingredients %}
-                                    <li>{{ item }}</li>
-                                {% endfor %}
-                            </ul>
+                <section class="panel">
+                    <h3 class="title">Saved Recipes</h3>
+                    <div class="mini-stack">
+                        {% if favorite_recipes %}
+                            {% for recipe in favorite_recipes %}
+                                <div class="mini">
+                                    <strong>{{ recipe.name }}</strong>
+                                    <small>Favorite recipe saved for quick return.</small>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="mini"><small>Save a recipe to build your collection.</small></div>
+                        {% endif %}
+                    </div>
+                </section>
+            </aside>
+
+            <section class="panel">
+                {% if user_input %}
+                    <h2 class="title">Recommendation Results</h2>
+                    <p class="muted">Recipes are ranked by pantry fit and personalized with your likes, favorites, and frequent ingredients.</p>
+
+                    {% if stats %}
+                        <div class="stats">
+                            <div class="stat"><label>Input Ingredients</label><strong>{{ stats.ingredients_count }}</strong></div>
+                            <div class="stat"><label>Returned Recipes</label><strong>{{ stats.results_count }}</strong></div>
+                            <div class="stat"><label>Best Pantry Fit</label><strong>{{ stats.best_match }}%</strong></div>
+                            <div class="stat"><label>Liked Recipes</label><strong>{{ stats.liked_count }}</strong></div>
+                            <div class="stat"><label>Favorites</label><strong>{{ stats.favorites_count }}</strong></div>
                         </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty">
-                    No suitable recipes were found for the current ingredients. Try adding more ingredients.
-                </div>
-            {% endif %}
-        {% endif %}
+                    {% endif %}
 
-        <div class="footer-note">
-            CSCI 630 Group Project · AI-Powered Smart Grocery & Nutrition Planner
+                    {% if normalized_items %}
+                        <div class="chip-list">
+                            {% for item in normalized_items %}
+                                <span class="chip-static">{{ item }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if recent_recipes %}
+                        <h3 class="title" style="margin-top:18px;">Recent Recipe Activity</h3>
+                        <div class="mini-stack" style="margin-bottom:18px;">
+                            {% for item in recent_recipes %}
+                                <div class="mini">
+                                    <strong>{{ item.name }}</strong>
+                                    <small>{{ item.event|capitalize }} on {{ item.timestamp }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if results %}
+                        <div class="recipes">
+                            {% for recipe in results %}
+                                <article class="recipe" style="animation-delay: {{ loop.index0 * 0.08 }}s;">
+                                    <div class="top">
+                                        <div>
+                                            <h3>{{ recipe.name }}</h3>
+                                            <p class="muted">{{ recipe.explanation }}</p>
+                                        </div>
+                                        <div class="rank">#{{ loop.index }}</div>
+                                    </div>
+                                    <div class="badge-row">
+                                        <span class="badge strong">{{ recipe.match_percent }}% match</span>
+                                        <span class="badge">{{ recipe.matched_count }} matched</span>
+                                        <span class="badge warn">{{ recipe.missing_count }} missing</span>
+                                        <span class="badge">{{ recipe.health_label }}</span>
+                                        <span class="badge">{{ recipe.calories if recipe.calories is not none else "N/A" }} cal</span>
+                                        {% if recipe.personalization_bonus > 0 %}
+                                            <span class="badge persona">+{{ recipe.personalization_bonus }} personalized</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="actions">
+                                        <form method="POST">
+                                            <input type="hidden" name="action" value="toggle_like">
+                                            <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                            <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+                                            <button class="action-btn {% if recipe.is_liked %}liked{% endif %}" type="submit">{% if recipe.is_liked %}Liked{% else %}Like{% endif %}</button>
+                                        </form>
+                                        <form method="POST">
+                                            <input type="hidden" name="action" value="toggle_favorite">
+                                            <input type="hidden" name="ingredients" value="{{ user_input }}">
+                                            <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+                                            <button class="action-btn {% if recipe.is_favorite %}favorited{% endif %}" type="submit">{% if recipe.is_favorite %}Saved{% else %}Save{% endif %}</button>
+                                        </form>
+                                    </div>
+                                    <div>
+                                        <h4 class="section">You already have</h4>
+                                        <div class="ingredient-list">
+                                            {% for item in recipe.matched_ingredients %}
+                                                <span class="mini-pill good">{{ item }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="section">You still need</h4>
+                                        <div class="ingredient-list">
+                                            {% for item in recipe.missing_ingredients %}
+                                                <span class="mini-pill missing">{{ item }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty">
+                            <h3>No strong matches yet</h3>
+                            <p class="muted">Try adding staples like garlic, cheese, oil, or chicken to widen the search.</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty">
+                        <h2 class="title">Start with what you already have</h2>
+                        <p class="muted">Search a few times, like a few dishes, and save favorites. The system will then start prioritizing recipes closer to your habits.</p>
+                    </div>
+                {% endif %}
+                <div class="footer">CSCI 630 Group Project | Personalized Smart Grocery and Nutrition Planner</div>
+            </section>
+        </main>
+    </div>
+
+    <div class="overlay" id="loadingOverlay" aria-hidden="true">
+        <div class="loading-card">
+            <div class="orb"></div>
+            <h3>Analyzing your pantry</h3>
+            <p class="muted">Matching ingredients, checking your history, and ranking recipes for the best kitchen fit.</p>
         </div>
     </div>
+
+    <script>
+        const form = document.getElementById("ingredientForm");
+        const textarea = document.getElementById("ingredients");
+        const submitButton = document.getElementById("submitButton");
+        const overlay = document.getElementById("loadingOverlay");
+        const exampleButtons = document.querySelectorAll("[data-example]");
+
+        exampleButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                if (textarea) {
+                    textarea.value = button.dataset.example || "";
+                    textarea.focus();
+                }
+            });
+        });
+
+        if (form && textarea && submitButton && overlay) {
+            form.addEventListener("submit", () => {
+                if (!textarea.value.trim()) {
+                    return;
+                }
+                submitButton.disabled = true;
+                submitButton.classList.add("is-loading");
+                overlay.classList.add("active");
+                document.body.classList.add("loading");
+            });
+        }
+    </script>
 </body>
 </html>
