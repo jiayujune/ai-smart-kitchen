@@ -196,6 +196,11 @@ def index():
             if staple:
                 preferences.remove_pantry_staple(staple)
 
+        elif action == "remove_search":
+            label = request.form.get("search_label", "").strip()
+            if label:
+                preferences.remove_search(label)
+
         if current_input:
             normalized_for_store = sorted(recommender.normalize_ingredients(parse_ingredients(current_input)))
             preferences.record_search(normalized_for_store)

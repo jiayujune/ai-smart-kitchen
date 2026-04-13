@@ -77,6 +77,17 @@ class UserPreferenceStore:
         )
         self.save()
 
+    def remove_search(self, label: str) -> None:
+        cleaned = label.strip()
+        if not cleaned:
+            return
+
+        original = self.data.get("search_history", [])
+        updated = [item for item in original if item.get("label") != cleaned]
+        if len(updated) != len(original):
+            self.data["search_history"] = updated
+            self.save()
+
     def update_recipe_feedback(self, recipe_id: int, field: str, delta: int) -> None:
         recipe_key = str(recipe_id)
         stats = self.data["recipe_feedback"].setdefault(recipe_key, {"likes": 0, "favorites": 0, "views": 0})
