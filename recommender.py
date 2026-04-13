@@ -1,12 +1,11 @@
 import json
+import math
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
 
 class SmartKitchenRecommender:
     def __init__(self, recipe_file: str):
-        self.recipes = self.load_recipes(recipe_file)
-        self.recipe_lookup = {recipe.get("id"): recipe for recipe in self.recipes if recipe.get("id") is not None}
         self.ingredient_map = {
             "roma tomato": "tomato",
             "roma tomatoes": "tomato",
@@ -56,6 +55,9 @@ class SmartKitchenRecommender:
             "sugar",
             "butter",
         }
+        self.recipes = self.load_recipes(recipe_file)
+        self.recipe_lookup = {recipe.get("id"): recipe for recipe in self.recipes if recipe.get("id") is not None}
+        self.recipe_ingredient_cache = self.build_recipe_ingredient_cache()
 
     def resolve_pantry_staples(self, user_profile: Optional[Dict]) -> Set[str]:
         if user_profile and user_profile.get("pantry_staples"):
@@ -65,6 +67,15 @@ class SmartKitchenRecommender:
     def load_recipes(self, recipe_file: str) -> List[Dict]:
         with open(recipe_file, "r", encoding="utf-8") as file:
             return json.load(file)
+
+    def build_recipe_ingredient_cache(self) -> Dict[int, Set[str]]:
+        cache = {}
+        for recipe in self.recipes:
+            recipe_id = recipe.get("id")
+            if recipe_id is None:
+                continue
+            cache[recipe_id] = self.normalize_ingredients(recipe.get("ingredients", []))
+        return cache
 
     def get_recipe_by_id(self, recipe_id: int) -> Optional[Dict]:
         return self.recipe_lookup.get(recipe_id)
@@ -129,6 +140,30 @@ class SmartKitchenRecommender:
         overlap = len(matched) / len(user_ingredients) if user_ingredients else 0.0
         return coverage, overlap, matched, missing, staple_matches
 
+    def compute_knn_similarity(
+        self,
+        user_ingredients: Set[str],
+        recipe_ingredients: Set[str],
+        pantry_staples: Set[str],
+    ) -> Tuple[float, float, float]:
+        if not user_ingredients or not recipe_ingredients:
+            return 0.0, 0.0, 0.0
+
+        effective_recipe_ingredients = recipe_ingredients.difference(pantry_staples)
+        if not effective_recipe_ingredients:
+            effective_recipe_ingredients = recipe_ingredients
+
+        matched_count = len(user_ingredients.intersection(effective_recipe_ingredients))
+        if matched_count == 0:
+            return 0.0, 0.0, 0.0
+
+        cosine_similarity = matched_count / math.sqrt(
+            len(user_ingredients) * len(effective_recipe_ingredients)
+        )
+        jaccard_similarity = matched_count / len(user_ingredients.union(effective_recipe_ingredients))
+        knn_score = cosine_similarity * 0.8 + jaccard_similarity * 0.2
+        return round(knn_score, 4), round(cosine_similarity, 4), round(jaccard_similarity, 4)
+
     def is_reasonable_recipe_name(self, name: str) -> bool:
         if not name or len(name.strip()) < 3:
             return False
@@ -190,6 +225,7 @@ class SmartKitchenRecommender:
 
     def compute_base_score(
         self,
+        knn_score: float,
         coverage: float,
         overlap: float,
         matched_count: int,
@@ -206,10 +242,11 @@ class SmartKitchenRecommender:
                 calorie_bonus = -0.18
 
         return round(
-            coverage * 0.55
-            + overlap * 0.20
-            + matched_count * 0.12
-            - missing_count * 0.08
+            knn_score * 0.45
+            + coverage * 0.25
+            + overlap * 0.10
+            + matched_count * 0.08
+            - missing_count * 0.05
             + calorie_bonus,
             4,
         )
@@ -281,8 +318,15 @@ class SmartKitchenRecommender:
             if not self.is_reasonable_recipe_name(recipe_name):
                 continue
 
-            recipe_ingredients = self.normalize_ingredients(recipe.get("ingredients", []))
+            recipe_ingredients = self.recipe_ingredient_cache.get(recipe_id) or self.normalize_ingredients(
+                recipe.get("ingredients", [])
+            )
             coverage, overlap, matched, missing, staple_matches = self.compute_match_details(
+                normalized_user_ingredients,
+                recipe_ingredients,
+                pantry_staples,
+            )
+            knn_score, cosine_similarity, jaccard_similarity = self.compute_knn_similarity(
                 normalized_user_ingredients,
                 recipe_ingredients,
                 pantry_staples,
@@ -295,10 +339,11 @@ class SmartKitchenRecommender:
             if calories is not None and calories > 900:
                 continue
 
-            if coverage < min_score or matched_count < min_matched_count or missing_count > max_missing_count:
+            if knn_score < min_score or matched_count < min_matched_count or missing_count > max_missing_count:
                 continue
 
             base_score = self.compute_base_score(
+                knn_score=knn_score,
                 coverage=coverage,
                 overlap=overlap,
                 matched_count=matched_count,
@@ -317,7 +362,11 @@ class SmartKitchenRecommender:
                 {
                     "id": recipe_id,
                     "name": recipe_name,
-                    "score": round(coverage, 3),
+                    "score": knn_score,
+                    "knn_score": knn_score,
+                    "cosine_similarity": cosine_similarity,
+                    "jaccard_similarity": jaccard_similarity,
+                    "coverage_score": round(coverage, 3),
                     "overlap_score": round(overlap, 3),
                     "matched_ingredients": matched,
                     "missing_ingredients": missing,
@@ -329,7 +378,7 @@ class SmartKitchenRecommender:
                     "base_score": base_score,
                     "personalization_bonus": personalization_bonus,
                     "final_score": final_score,
-                    "match_percent": round(coverage * 100),
+                    "match_percent": round(knn_score * 100),
                     "is_liked": recipe_id in liked,
                     "is_favorite": recipe_id in favorites,
                     "explanation": self.build_explanation(
@@ -385,6 +434,7 @@ class SmartKitchenRecommender:
         recommendations.sort(
             key=lambda item: (
                 item["final_score"],
+                item["knn_score"],
                 item["matched_count"],
                 -item["missing_count"],
                 item["overlap_score"],
@@ -414,7 +464,8 @@ if __name__ == "__main__":
         for index, recipe in enumerate(results, start=1):
             print(f"{index}. {recipe['name']}")
             print(f"   Match percent: {recipe['match_percent']}%")
-            print(f"   Coverage score: {recipe['score']}")
+            print(f"   KNN similarity score: {recipe['knn_score']}")
+            print(f"   Coverage score: {recipe['coverage_score']}")
             print(f"   Pantry overlap: {recipe['overlap_score']}")
             print(f"   Personalization bonus: {recipe['personalization_bonus']}")
             print(f"   Matched count: {recipe['matched_count']}")
