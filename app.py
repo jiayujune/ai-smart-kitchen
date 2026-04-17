@@ -45,6 +45,14 @@ SORT_OPTIONS = {
     "most_personalized": "Most Personalized",
 }
 
+DIETARY_FILTER_OPTIONS = {
+    "vegetarian": "Vegetarian",
+    "gluten_free": "Gluten Free",
+    "vegan": "Vegan",
+    "dairy_free": "Dairy Free",
+    "nut_free": "Nut Free",
+}
+
 CHAT_MODEL = os.environ.get("GROQ_CHAT_MODEL", "llama-3.1-8b-instant")
 CHAT_HISTORY_LIMIT = 8
 
@@ -63,6 +71,10 @@ def parse_ingredients(raw_text: str) -> List[str]:
     return [item.strip() for item in raw_text.split(",") if item.strip()]
 
 
+def parse_dietary_filters(raw_values: List[str]) -> List[str]:
+    return [item for item in raw_values if item in DIETARY_FILTER_OPTIONS]
+
+
 def build_nutrition_items(nutrition: List) -> List[Dict]:
     items = []
     for label, index in NUTRITION_LABELS:
@@ -71,9 +83,16 @@ def build_nutrition_items(nutrition: List) -> List[Dict]:
     return items
 
 
-def build_chat_context(user_input: str, sort_mode: str, results: List[Dict], profile: Dict) -> str:
+def build_chat_context(
+    user_input: str,
+    sort_mode: str,
+    dietary_filters: List[str],
+    results: List[Dict],
+    profile: Dict,
+) -> str:
     normalized_items = sorted(recommender.normalize_ingredients(parse_ingredients(user_input)))
     pantry_staples = profile.get("pantry_staples", [])
+    active_dietary_labels = [DIETARY_FILTER_OPTIONS[item] for item in dietary_filters]
     top_results = []
     for item in results[:5]:
         top_results.append(
@@ -88,6 +107,7 @@ def build_chat_context(user_input: str, sort_mode: str, results: List[Dict], pro
         f"Current available ingredients: {', '.join(normalized_items) if normalized_items else 'None provided'}\n"
         f"Current pantry staples: {', '.join(pantry_staples) if pantry_staples else 'None configured'}\n"
         f"Current sort mode: {SORT_OPTIONS.get(sort_mode, 'Best Match')}\n"
+        f"Current dietary filters: {', '.join(active_dietary_labels) if active_dietary_labels else 'None'}\n"
         f"Current top recommendations:\n{result_block}\n\n"
         "When possible, reference the recommendations already on screen. Keep answers concise, practical, and cooking-focused."
     )
@@ -126,7 +146,7 @@ def call_openai_chat(messages: List[Dict], api_key_override: str = "") -> str:
     return data["choices"][0]["message"]["content"].strip()
 
 
-def build_results(user_input: str, sort_mode: str) -> Dict:
+def build_results(user_input: str, sort_mode: str, dietary_filters: List[str]) -> Dict:
     user_items = parse_ingredients(user_input)
     normalized_items = sorted(recommender.normalize_ingredients(user_items))
     profile = preferences.snapshot()
@@ -135,6 +155,7 @@ def build_results(user_input: str, sort_mode: str) -> Dict:
         user_items,
         user_profile=profile,
         sort_mode=sort_mode,
+        dietary_filters=dietary_filters,
         **DEFAULT_SETTINGS,
     )
 
@@ -147,6 +168,7 @@ def build_results(user_input: str, sort_mode: str) -> Dict:
             "liked_count": len(profile.get("liked_recipes", [])),
             "favorites_count": len(profile.get("favorites", [])),
             "staples_count": len(profile.get("pantry_staples", [])),
+            "dietary_filter_count": len(dietary_filters),
         }
 
     return {
@@ -161,6 +183,7 @@ def build_results(user_input: str, sort_mode: str) -> Dict:
 def index():
     current_input = request.values.get("ingredients", "").strip()
     sort_mode = request.values.get("sort_mode", "best_match").strip() or "best_match"
+    active_dietary_filters = parse_dietary_filters(request.values.getlist("dietary_filters"))
     if sort_mode not in SORT_OPTIONS:
         sort_mode = "best_match"
 
@@ -205,7 +228,7 @@ def index():
             normalized_for_store = sorted(recommender.normalize_ingredients(parse_ingredients(current_input)))
             preferences.record_search(normalized_for_store)
 
-    page_data = build_results(current_input, sort_mode)
+    page_data = build_results(current_input, sort_mode, active_dietary_filters)
     profile = page_data["profile"]
 
     quick_ingredients = preferences.top_ingredients(limit=10)
@@ -227,6 +250,8 @@ def index():
         user_input=current_input,
         sort_mode=sort_mode,
         sort_options=SORT_OPTIONS,
+        dietary_filter_options=DIETARY_FILTER_OPTIONS,
+        active_dietary_filters=active_dietary_filters,
         normalized_items=page_data["normalized_items"],
         stats=page_data["stats"],
         example_ingredients=EXAMPLE_INGREDIENTS,
@@ -246,19 +271,21 @@ def chat():
     user_input = (payload.get("ingredients") or "").strip()
     api_key_override = (payload.get("api_key") or "").strip()
     sort_mode = (payload.get("sort_mode") or "best_match").strip()
+    dietary_filters = parse_dietary_filters(payload.get("dietary_filters") or [])
     if sort_mode not in SORT_OPTIONS:
         sort_mode = "best_match"
 
     if not user_message:
         return jsonify({"error": "Message is required."}), 400
 
-    page_data = build_results(user_input, sort_mode)
+    page_data = build_results(user_input, sort_mode, dietary_filters)
     profile = page_data["profile"]
     chat_history = session.get("chat_history", [])
 
     system_prompt = build_chat_context(
         user_input=user_input,
         sort_mode=sort_mode,
+        dietary_filters=dietary_filters,
         results=page_data["results"],
         profile=profile,
     )
@@ -296,6 +323,7 @@ def recipe_detail(recipe_id: int):
 
     current_input = request.args.get("ingredients", "").strip()
     sort_mode = request.args.get("sort_mode", "best_match").strip() or "best_match"
+    active_dietary_filters = parse_dietary_filters(request.args.getlist("dietary_filters"))
     if sort_mode not in SORT_OPTIONS:
         sort_mode = "best_match"
 
@@ -312,6 +340,7 @@ def recipe_detail(recipe_id: int):
         user_input=current_input,
         sort_mode=sort_mode,
         sort_label=SORT_OPTIONS[sort_mode],
+        dietary_filters=active_dietary_filters,
         normalized_items=normalized_items,
         matched_items=matched_items,
         missing_items=missing_items,

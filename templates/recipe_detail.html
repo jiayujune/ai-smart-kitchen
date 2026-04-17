@@ -171,7 +171,7 @@
 </head>
 <body>
     <div class="page">
-        <a class="back-link" href="{{ url_for('index', ingredients=user_input, sort_mode=sort_mode) }}">Back to results</a>
+        <a class="back-link" href="{{ url_for('index', ingredients=user_input, sort_mode=sort_mode, dietary_filters=dietary_filters) }}">Back to results</a>
 
         <section class="card">
             <h1>{{ recipe.name }}</h1>

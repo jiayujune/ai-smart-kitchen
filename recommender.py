@@ -6,6 +6,148 @@ from typing import Dict, List, Optional, Set, Tuple
 
 class SmartKitchenRecommender:
     def __init__(self, recipe_file: str):
+        self.dietary_rules = {
+            "vegetarian": {
+                "label": "Vegetarian",
+                "blocked_terms": {
+                    "anchovy",
+                    "bacon",
+                    "beef",
+                    "beef broth",
+                    "beef stock",
+                    "chicken",
+                    "chicken broth",
+                    "chicken stock",
+                    "clam",
+                    "crab",
+                    "duck",
+                    "fish",
+                    "fish stock",
+                    "gelatin",
+                    "ham",
+                    "lamb",
+                    "lobster",
+                    "meat",
+                    "oyster",
+                    "pepperoni",
+                    "pork",
+                    "prosciutto",
+                    "salami",
+                    "salmon",
+                    "sausage",
+                    "shrimp",
+                    "tuna",
+                    "turkey",
+                    "veal",
+                },
+            },
+            "gluten_free": {
+                "label": "Gluten Free",
+                "blocked_terms": {
+                    "barley",
+                    "beer",
+                    "bread",
+                    "breadcrumb",
+                    "bulgur",
+                    "couscous",
+                    "cracker",
+                    "flour",
+                    "lasagna",
+                    "malt",
+                    "noodle",
+                    "panko",
+                    "pasta",
+                    "rye",
+                    "seitan",
+                    "soy sauce",
+                    "spaghetti",
+                    "tortilla",
+                    "wheat",
+                },
+            },
+            "vegan": {
+                "label": "Vegan",
+                "blocked_terms": {
+                    "anchovy",
+                    "bacon",
+                    "beef",
+                    "beef broth",
+                    "beef stock",
+                    "butter",
+                    "buttermilk",
+                    "casein",
+                    "cheese",
+                    "chicken",
+                    "chicken broth",
+                    "chicken stock",
+                    "clam",
+                    "cream",
+                    "crab",
+                    "duck",
+                    "egg",
+                    "fish",
+                    "fish stock",
+                    "gelatin",
+                    "ghee",
+                    "ham",
+                    "honey",
+                    "lamb",
+                    "lobster",
+                    "mayonnaise",
+                    "meat",
+                    "milk",
+                    "oyster",
+                    "pepperoni",
+                    "pork",
+                    "prosciutto",
+                    "salami",
+                    "salmon",
+                    "sausage",
+                    "shrimp",
+                    "tuna",
+                    "turkey",
+                    "veal",
+                    "whey",
+                    "yogurt",
+                },
+            },
+            "dairy_free": {
+                "label": "Dairy Free",
+                "blocked_terms": {
+                    "butter",
+                    "buttermilk",
+                    "casein",
+                    "cheese",
+                    "cream",
+                    "creme fraiche",
+                    "ghee",
+                    "half and half",
+                    "ice cream",
+                    "milk",
+                    "parmesan",
+                    "sour cream",
+                    "whey",
+                    "yogurt",
+                },
+            },
+            "nut_free": {
+                "label": "Nut Free",
+                "blocked_terms": {
+                    "almond",
+                    "brazil nut",
+                    "cashew",
+                    "chestnut",
+                    "hazelnut",
+                    "macadamia",
+                    "nut",
+                    "peanut",
+                    "pecan",
+                    "pine nut",
+                    "pistachio",
+                    "walnut",
+                },
+            },
+        }
         self.ingredient_map = {
             "roma tomato": "tomato",
             "roma tomatoes": "tomato",
@@ -34,6 +176,9 @@ class SmartKitchenRecommender:
             "cheddar cheese": "cheese",
             "mozzarella cheese": "cheese",
             "parmesan cheese": "cheese",
+            "heavy cream": "cream",
+            "sour cream": "sour cream",
+            "greek yogurt": "yogurt",
             "olive oil": "oil",
             "vegetable oil": "oil",
             "canola oil": "oil",
@@ -44,6 +189,14 @@ class SmartKitchenRecommender:
             "lean ground beef": "beef",
             "all purpose flour": "flour",
             "plain flour": "flour",
+            "wheat flour": "flour",
+            "whole wheat flour": "flour",
+            "peanuts": "peanut",
+            "almonds": "almond",
+            "walnuts": "walnut",
+            "pecans": "pecan",
+            "cashews": "cashew",
+            "pistachios": "pistachio",
         }
         self.pantry_staples = {
             "salt",
@@ -114,6 +267,45 @@ class SmartKitchenRecommender:
                 if normalized_item:
                     normalized.add(normalized_item)
         return normalized
+
+    def normalize_dietary_filters(self, dietary_filters: Optional[List[str]]) -> Set[str]:
+        if not dietary_filters:
+            return set()
+        return {item for item in dietary_filters if item in self.dietary_rules}
+
+    def ingredient_contains_term(self, ingredient: str, term: str) -> bool:
+        if ingredient == term:
+            return True
+        if " " in term:
+            return term in ingredient
+        return bool(re.search(rf"\b{re.escape(term)}\b", ingredient))
+
+    def recipe_matches_dietary_filters(
+        self,
+        recipe_ingredients: Set[str],
+        dietary_filters: Optional[List[str]],
+    ) -> bool:
+        active_filters = self.normalize_dietary_filters(dietary_filters)
+        if not active_filters:
+            return True
+
+        for filter_key in active_filters:
+            blocked_terms = self.dietary_rules[filter_key]["blocked_terms"]
+            for ingredient in recipe_ingredients:
+                if any(self.ingredient_contains_term(ingredient, term) for term in blocked_terms):
+                    return False
+        return True
+
+    def dietary_labels_for_recipe(
+        self,
+        recipe_ingredients: Set[str],
+        dietary_filters: Optional[List[str]],
+    ) -> List[str]:
+        return [
+            self.dietary_rules[filter_key]["label"]
+            for filter_key in self.normalize_dietary_filters(dietary_filters)
+            if self.recipe_matches_dietary_filters(recipe_ingredients, [filter_key])
+        ]
 
     def compute_match_details(
         self,
@@ -301,6 +493,7 @@ class SmartKitchenRecommender:
         max_missing_count: int = 5,
         user_profile: Optional[Dict] = None,
         sort_mode: str = "best_match",
+        dietary_filters: Optional[List[str]] = None,
     ) -> List[Dict]:
         normalized_user_ingredients = self.normalize_ingredients(user_ingredients)
         if not normalized_user_ingredients:
@@ -321,6 +514,9 @@ class SmartKitchenRecommender:
             recipe_ingredients = self.recipe_ingredient_cache.get(recipe_id) or self.normalize_ingredients(
                 recipe.get("ingredients", [])
             )
+            if not self.recipe_matches_dietary_filters(recipe_ingredients, dietary_filters):
+                continue
+
             coverage, overlap, matched, missing, staple_matches = self.compute_match_details(
                 normalized_user_ingredients,
                 recipe_ingredients,
@@ -381,6 +577,7 @@ class SmartKitchenRecommender:
                     "match_percent": round(knn_score * 100),
                     "is_liked": recipe_id in liked,
                     "is_favorite": recipe_id in favorites,
+                    "dietary_labels": self.dietary_labels_for_recipe(recipe_ingredients, dietary_filters),
                     "explanation": self.build_explanation(
                         matched_count=matched_count,
                         missing_count=missing_count,

@@ -316,6 +316,36 @@
             flex-wrap: wrap;
         }
 
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            min-height: 46px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.72);
+            color: var(--ink);
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+
+        .filter-option input {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            accent-color: var(--accent-strong);
+        }
+
         textarea {
             flex: 1;
             min-height: 120px;
@@ -1416,12 +1446,27 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="subsection-title">Dietary filters</div>
+                <div class="filter-row">
+                    {% for value, label in dietary_filter_options.items() %}
+                        <label class="filter-option" for="dietary_{{ value }}">
+                            <input
+                                type="checkbox"
+                                id="dietary_{{ value }}"
+                                name="dietary_filters"
+                                value="{{ value }}"
+                                {% if value in active_dietary_filters %}checked{% endif %}
+                            >
+                            {{ label }}
+                        </label>
+                    {% endfor %}
+                </div>
                 <button class="submit-button" type="submit" id="submitButton">
                     <span class="button-label">Find Recipes</span>
                     <span class="button-loading"><span class="spinner"></span>Ranking Matches...</span>
                 </button>
                 <div class="helper-text">
-                    Try a simple pantry list like <strong>egg, tomato, rice, onion</strong> and compare ranking modes.
+                    Try a simple pantry list like <strong>egg, tomato, rice, onion</strong>, then refine by sort mode or dietary needs.
                 </div>
 
                 {% if quick_ingredients %}
@@ -1446,6 +1491,9 @@
             <div class="section-title">Recommendation Results</div>
             <div class="sort-row">
                 <span class="chip primary">Current Sort: {{ sort_options[sort_mode] }}</span>
+                {% for filter_key in active_dietary_filters %}
+                    <span class="chip success">{{ dietary_filter_options[filter_key] }}</span>
+                {% endfor %}
                 <span class="sort-note">Switch sorting above to compare pantry fit, missing items, calories, or personalization.</span>
             </div>
 
@@ -1470,6 +1518,10 @@
                     <div class="summary-card">
                         <span>Pantry Staples</span>
                         <strong>{{ stats.staples_count }}</strong>
+                    </div>
+                    <div class="summary-card">
+                        <span>Dietary Filters</span>
+                        <strong>{{ stats.dietary_filter_count }}</strong>
                     </div>
                 </div>
             {% endif %}
@@ -1499,6 +1551,9 @@
                                 <input type="hidden" name="action" value="remove_search">
                                 <input type="hidden" name="ingredients" value="{{ user_input }}">
                                 <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                {% for filter_key in active_dietary_filters %}
+                                    <input type="hidden" name="dietary_filters" value="{{ filter_key }}">
+                                {% endfor %}
                                 <input type="hidden" name="search_label" value="{{ item.label }}">
                                 <button class="history-delete" type="submit" aria-label="Delete recent search">Delete</button>
                             </form>
@@ -1520,6 +1575,9 @@
                                     <input type="hidden" name="action" value="remove_staple">
                                     <input type="hidden" name="ingredients" value="{{ user_input }}">
                                     <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                    {% for filter_key in active_dietary_filters %}
+                                        <input type="hidden" name="dietary_filters" value="{{ filter_key }}">
+                                    {% endfor %}
                                     <input type="hidden" name="staple" value="{{ staple }}">
                                     <span class="chip-with-action">
                                         {{ staple }}
@@ -1538,6 +1596,9 @@
                                 <input type="hidden" name="action" value="add_staple">
                                 <input type="hidden" name="ingredients" value="{{ user_input }}">
                                 <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                {% for filter_key in active_dietary_filters %}
+                                    <input type="hidden" name="dietary_filters" value="{{ filter_key }}">
+                                {% endfor %}
                                 <input type="hidden" name="staple" value="{{ staple }}">
                                 <button class="chip-button" type="submit">+ {{ staple }}</button>
                             </form>
@@ -1570,6 +1631,9 @@
                                 <span class="badge">Matched: {{ recipe.matched_count }}</span>
                                 <span class="badge">Missing: {{ recipe.missing_count }}</span>
                                 <span class="badge">Calories: {{ recipe.calories }}</span>
+                                {% for label in recipe.dietary_labels %}
+                                    <span class="badge personalized">{{ label }}</span>
+                                {% endfor %}
                                 {% if recipe.personalization_bonus > 0 %}
                                     <span class="badge personalized">Personalized: +{{ recipe.personalization_bonus }}</span>
                                 {% endif %}
@@ -1580,6 +1644,9 @@
                                     <input type="hidden" name="action" value="toggle_like">
                                     <input type="hidden" name="ingredients" value="{{ user_input }}">
                                     <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                    {% for filter_key in active_dietary_filters %}
+                                        <input type="hidden" name="dietary_filters" value="{{ filter_key }}">
+                                    {% endfor %}
                                     <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                                     <button class="small-button {% if recipe.is_liked %}active-like{% endif %}" type="submit">
                                         {% if recipe.is_liked %}Liked{% else %}Like{% endif %}
@@ -1589,6 +1656,9 @@
                                     <input type="hidden" name="action" value="toggle_favorite">
                                     <input type="hidden" name="ingredients" value="{{ user_input }}">
                                     <input type="hidden" name="sort_mode" value="{{ sort_mode }}">
+                                    {% for filter_key in active_dietary_filters %}
+                                        <input type="hidden" name="dietary_filters" value="{{ filter_key }}">
+                                    {% endfor %}
                                     <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                                     <button class="small-button {% if recipe.is_favorite %}active-save{% endif %}" type="submit">
                                         {% if recipe.is_favorite %}Saved{% else %}Save{% endif %}
@@ -1596,7 +1666,7 @@
                                 </form>
                             </div>
 
-                            <a class="detail-link" href="{{ url_for('recipe_detail', recipe_id=recipe.id, ingredients=user_input, sort_mode=sort_mode) }}">
+                            <a class="detail-link" href="{{ url_for('recipe_detail', recipe_id=recipe.id, ingredients=user_input, sort_mode=sort_mode, dietary_filters=active_dietary_filters) }}">
                                 View Details
                             </a>
 
@@ -1702,6 +1772,7 @@
         const saveApiKeyButton = document.getElementById("saveApiKeyButton");
         const chatKeyStatus = document.getElementById("chatKeyStatus");
         const currentSortMode = document.getElementById("sort_mode");
+        const dietaryFilterInputs = document.querySelectorAll('input[name="dietary_filters"]');
         const quickPromptButtons = document.querySelectorAll("[data-chat-prompt]");
         const apiKeyStorageKey = "smart-kitchen-groq-api-key";
         const scrollStorageKey = "smart-kitchen-scroll-y";
@@ -1798,6 +1869,12 @@
             node.textContent = text;
             chatMessages.appendChild(node);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function getActiveDietaryFilters() {
+            return Array.from(dietaryFilterInputs)
+                .filter((input) => input.checked)
+                .map((input) => input.value);
         }
 
         function sleep(ms) {
@@ -1933,6 +2010,7 @@
                         message,
                         ingredients: textarea?.value || "",
                         sort_mode: currentSortMode?.value || "best_match",
+                        dietary_filters: getActiveDietaryFilters(),
                         api_key: chatApiKey?.value || "",
                     }),
                 });

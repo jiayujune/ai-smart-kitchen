@@ -6,6 +6,7 @@ AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi 
 
 - Pantry-first recipe search using ingredient normalization and overlap scoring
 - Multiple ranking modes: `Best Match`, `Fewest Missing`, `Lowest Calories`, and `Most Personalized`
+- Dietary filters for vegetarian, gluten-free, vegan, dairy-free, and nut-free recipe searches
 - Smart pantry staples so common household items do not clutter missing-ingredient lists
 - Like, save, and recent-search history to make recommendations feel more personal over time
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
@@ -25,8 +26,9 @@ the system:
 1. Normalizes ingredient text into a cleaner comparison set
 2. Scores recipes based on ingredient coverage and overlap
 3. Penalizes recipes with too many missing ingredients
-4. Applies calorie-aware and preference-aware adjustments
-5. Returns ranked recipe cards with explanation text and drill-down details
+4. Applies selected dietary filters when needed
+5. Applies calorie-aware and preference-aware adjustments
+6. Returns ranked recipe cards with explanation text and drill-down details
 
 ## Interface Overview
 
@@ -63,6 +65,7 @@ Implements the rule-based recommendation engine:
 - ingredient normalization and synonym handling
 - pantry staple resolution
 - match, overlap, and missing-ingredient computation
+- vegetarian, gluten-free, vegan, dairy-free, and nut-free hard filtering
 - final scoring and ranking helpers
 
 ### `user_preferences.py`
@@ -166,12 +169,12 @@ python clean_recipes.py
 - Recommendation quality is still heuristic rather than learned
 - Ingredient synonym handling is useful but not exhaustive
 - No account system or multi-user state separation yet
-- No allergy-safe filtering or hard dietary constraints yet
+- Dietary filters are rule-based and not a certified allergy or medical safety system
 - The assistant depends on an external API key and network access
 
 ## Good Next Steps
 
-- Add dietary filters such as vegetarian, high-protein, or low-sodium
+- Add more dietary modes such as high-protein, low-sodium, diabetic-friendly, or low-carb
 - Add richer scoring explanations and visual progress indicators
 - Support partial AJAX updates for like/save/delete actions
 - Add screenshots or a short demo GIF to this README
