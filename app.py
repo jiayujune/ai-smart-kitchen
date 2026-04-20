@@ -44,6 +44,7 @@ SORT_OPTIONS = {
     "fewest_missing": "Fewest Missing",
     "lowest_calories": "Lowest Calories",
     "most_personalized": "Most Personalized",
+    "ml_ranker": "ML Ranker",
 }
 
 DIETARY_FILTER_OPTIONS = {
@@ -350,6 +351,7 @@ def recipe_detail(recipe_id: int):
             normalized_user_ingredients=set(normalized_items),
             pantry_staples=pantry_staples,
             user_profile=preferences.snapshot(),
+            dietary_filters=active_dietary_filters,
         )
 
     return render_template(

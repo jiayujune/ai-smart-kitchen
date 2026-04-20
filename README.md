@@ -5,13 +5,14 @@ AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi 
 ## Highlights
 
 - Pantry-first recipe search using ingredient normalization and overlap scoring
-- Multiple ranking modes: `Best Match`, `Fewest Missing`, `Lowest Calories`, and `Most Personalized`
+- Multiple ranking modes: `Best Match`, `Fewest Missing`, `Lowest Calories`, `Most Personalized`, and `ML Ranker`
 - Dietary filters for vegetarian, gluten-free, vegan, dairy-free, and nut-free recipe searches
 - Smart pantry staples so common household items do not clutter missing-ingredient lists
 - Like, save, and recent-search history to make recommendations feel more personal over time
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
 - Explainable AI score breakdowns for every recommendation
-- Offline AI/ML evaluation script comparing baseline and similarity rankers
+- Supervised Logistic Regression ranker trained from pseudo-labeled recipe relevance data
+- Offline AI/ML evaluation dashboard comparing baseline, similarity, hybrid, and supervised ML rankers
 - Built-in AI assistant for substitutions, meal triage, nutrition guidance, and quick cooking decisions
 - HUD-inspired frontend with real-time system styling, animated assistant states, and progressive response reveal
 
@@ -30,7 +31,8 @@ the system:
 3. Penalizes recipes with too many missing ingredients
 4. Applies selected dietary filters when needed
 5. Applies calorie-aware and preference-aware adjustments
-6. Returns ranked recipe cards with explanation text and drill-down details
+6. Optionally ranks candidates with the supervised ML model
+7. Returns ranked recipe cards with explanation text and drill-down details
 
 ## AI Method
 
@@ -57,6 +59,38 @@ Final Score = 0.45 * KNN similarity
             + personalization bonus
 ```
 
+## Supervised ML Ranker
+
+The project also includes a supervised machine learning ranker. It trains a pure-Python Logistic Regression model on query-recipe pairs. Each pair becomes a feature vector using signals already computed by the recommender:
+
+- KNN, cosine, and Jaccard similarity
+- Ingredient coverage and pantry overlap
+- Matched and missing ingredient counts
+- Missing and matched ratios
+- Calories and calorie adjustment
+- Personalization bonus
+
+Because the dataset does not include explicit user ratings, the first version uses pseudo-labels:
+
+```text
+label = 1 when the recipe satisfies the relevance proxy
+label = 0 otherwise
+```
+
+Train or refresh the supervised model:
+
+```powershell
+python train_model.py
+```
+
+The trained model is saved to:
+
+```text
+models/recipe_ranker.json
+```
+
+When that file exists, the app automatically enables the `ML Ranker` sorting mode and displays the predicted relevance probability on recipe cards.
+
 ## Explainable AI
 
 Each recipe card now shows an explainable score panel. The panel breaks the final score into individual positive and negative contributions, including similarity, coverage, matched ingredients, missing-ingredient penalty, calorie adjustment, and personalization. The recipe detail page reuses the same scoring logic so the explanation is consistent across the app.
@@ -73,6 +107,7 @@ Evaluated rankers:
 - Jaccard similarity
 - KNN similarity
 - Hybrid explainable score
+- Supervised ML ranker
 
 Metrics:
 
@@ -157,7 +192,15 @@ Utility script for turning the raw recipe CSV into the cleaned JSON dataset used
 
 ### `evaluation.py`
 
-Offline evaluation script for comparing simple baselines against the current hybrid recommender.
+Offline evaluation script for comparing simple baselines, similarity rankers, the hybrid recommender, and the supervised ML ranker.
+
+### `train_model.py`
+
+Builds pseudo-labeled training data and trains the Logistic Regression recipe ranker.
+
+### `ml_model.py`
+
+Loads the trained model, extracts feature vectors, predicts recipe relevance probability, and builds ML feature contribution explanations.
 
 ## Tech Stack
 
@@ -175,13 +218,18 @@ Offline evaluation script for comparing simple baselines against the current hyb
 |-- app.py
 |-- recommender.py
 |-- user_preferences.py
+|-- ml_model.py
+|-- train_model.py
 |-- clean_recipes.py
 |-- evaluation.py
+|-- models/
+|   `-- recipe_ranker.json
 |-- recipes_clean.json
 |-- RAW_recipes.csv
 |-- user_profile.json
 |-- templates/
 |   |-- index.html
+|   |-- evaluation.html
 |   `-- recipe_detail.html
 `-- AI_Recommendation_system.ipynb
 ```
@@ -243,7 +291,7 @@ python clean_recipes.py
 
 ## Current Limitations
 
-- Recommendation quality is still heuristic rather than learned
+- The supervised model currently uses pseudo-labels rather than real explicit user ratings
 - Ingredient synonym handling is useful but not exhaustive
 - No account system or multi-user state separation yet
 - Dietary filters are rule-based and not a certified allergy or medical safety system
@@ -251,8 +299,8 @@ python clean_recipes.py
 
 ## Good Next Steps
 
+- Replace pseudo-labels with real feedback labels from likes, saves, clicks, and ignored recommendations
 - Add more dietary modes such as high-protein, low-sodium, diabetic-friendly, or low-carb
-- Add richer scoring explanations and visual progress indicators
 - Support partial AJAX updates for like/save/delete actions
 - Add screenshots or a short demo GIF to this README
 - Deploy a hosted demo for portfolio or class presentation use

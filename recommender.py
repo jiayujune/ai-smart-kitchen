@@ -3,6 +3,8 @@ import math
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
+from ml_model import attach_ml_prediction, load_ml_ranker
+
 
 class SmartKitchenRecommender:
     def __init__(self, recipe_file: str):
@@ -211,6 +213,7 @@ class SmartKitchenRecommender:
         self.recipes = self.load_recipes(recipe_file)
         self.recipe_lookup = {recipe.get("id"): recipe for recipe in self.recipes if recipe.get("id") is not None}
         self.recipe_ingredient_cache = self.build_recipe_ingredient_cache()
+        self.ml_ranker = load_ml_ranker()
 
     def resolve_pantry_staples(self, user_profile: Optional[Dict]) -> Set[str]:
         if user_profile and user_profile.get("pantry_staples"):
@@ -590,7 +593,7 @@ class SmartKitchenRecommender:
         liked = set(user_profile.get("liked_recipes", [])) if user_profile else set()
         favorites = set(user_profile.get("favorites", [])) if user_profile else set()
 
-        return {
+        scored_recipe = {
             "id": recipe_id,
             "name": recipe.get("name", "unknown recipe"),
             "score": knn_score,
@@ -637,6 +640,7 @@ class SmartKitchenRecommender:
                 personalization_reasons=personalization_reasons,
             ),
         }
+        return attach_ml_prediction(scored_recipe, self.ml_ranker)
 
     def recommend_recipes(
         self,
@@ -721,6 +725,18 @@ class SmartKitchenRecommender:
                     item["personalization_bonus"],
                     item["final_score"],
                     item["matched_count"],
+                    -item["missing_count"],
+                ),
+                reverse=True,
+            )
+            return recommendations
+
+        if sort_mode == "ml_ranker":
+            recommendations.sort(
+                key=lambda item: (
+                    item.get("ml_score", 0),
+                    item["final_score"],
+                    item["knn_score"],
                     -item["missing_count"],
                 ),
                 reverse=True,

@@ -171,6 +171,10 @@
             background: rgba(34, 197, 94, 0.08);
         }
 
+        .ml-row td {
+            background: rgba(14, 165, 233, 0.1);
+        }
+
         .score-bar {
             display: inline-flex;
             align-items: center;
@@ -214,6 +218,30 @@
             margin-top: 14px;
             color: var(--muted);
             font-size: 0.92rem;
+        }
+
+        .weights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .weight-card {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(2, 6, 23, 0.36);
+        }
+
+        .weight-card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .weight-card span {
+            color: var(--muted);
+            font-size: 0.9rem;
         }
 
         @media (max-width: 680px) {
@@ -260,8 +288,48 @@
                     <span>Candidate Filter</span>
                     <strong style="font-size: 1rem;">{{ report.candidate_filter }}</strong>
                 </div>
+                <div class="metric-card">
+                    <span>Supervised Model</span>
+                    <strong style="font-size: 1rem;">{% if report.ml_ranker_available %}Logistic Regression{% else %}Not Trained{% endif %}</strong>
+                </div>
             </div>
         </section>
+
+        {% if report.ml_ranker_available %}
+            <section class="panel">
+                <h2>Supervised ML Model</h2>
+                <p>
+                    The ML ranker predicts recipe relevance probability using a Logistic Regression model trained on pseudo-labeled
+                    query and recipe pairs. Positive labels follow the relevance proxy used in this dashboard.
+                </p>
+                <div class="meta-grid">
+                    <div class="metric-card">
+                        <span>Training Examples</span>
+                        <strong>{{ report.ml_training.train_examples }}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>Test Examples</span>
+                        <strong>{{ report.ml_training.test_examples }}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>Test Precision</span>
+                        <strong>{{ "%.3f"|format(report.ml_training.test_metrics.precision) }}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>Test F1</span>
+                        <strong>{{ "%.3f"|format(report.ml_training.test_metrics.f1) }}</strong>
+                    </div>
+                </div>
+                <div class="weights-grid">
+                    {% for row in report.ml_feature_weights[:8] %}
+                        <div class="weight-card">
+                            <strong>{{ row.feature }}</strong>
+                            <span>{{ "%+.4f"|format(row.weight) }} | {{ row.direction }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
 
         <section class="panel">
             <h2>Aggregate Results</h2>
@@ -278,7 +346,7 @@
                     </thead>
                     <tbody>
                         {% for row in report.aggregate_rows %}
-                            <tr class="{% if row.ranker == 'Hybrid explainable score' %}hybrid-row{% endif %}">
+                            <tr class="{% if row.ranker == 'Hybrid explainable score' %}hybrid-row{% elif row.ranker == 'Supervised ML ranker' %}ml-row{% endif %}">
                                 <td class="ranker-name">{{ row.ranker }}</td>
                                 <td>
                                     <span class="score-bar">
@@ -321,7 +389,7 @@
                             </thead>
                             <tbody>
                                 {% for row in query.rows %}
-                                    <tr class="{% if row.ranker == 'Hybrid explainable score' %}hybrid-row{% endif %}">
+                                    <tr class="{% if row.ranker == 'Hybrid explainable score' %}hybrid-row{% elif row.ranker == 'Supervised ML ranker' %}ml-row{% endif %}">
                                         <td class="ranker-name">{{ row.ranker }}</td>
                                         <td>{{ "%.3f"|format(row.precision_at_k) }}</td>
                                         <td>{{ "%.2f"|format(row.avg_missing) }}</td>

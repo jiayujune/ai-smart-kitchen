@@ -118,8 +118,8 @@ def print_table(rows: List[Dict]) -> None:
         print(" | ".join(value.ljust(width) for value, width in zip(values, widths)))
 
 
-def get_rankers() -> Dict[str, Callable[[Dict], tuple]]:
-    return {
+def get_rankers(include_ml_ranker: bool = False) -> Dict[str, Callable[[Dict], tuple]]:
+    rankers = {
         "Baseline matched count": lambda item: (
             item["matched_count"],
             -item["missing_count"],
@@ -142,6 +142,14 @@ def get_rankers() -> Dict[str, Callable[[Dict], tuple]]:
             -item["missing_count"],
         ),
     }
+    if include_ml_ranker:
+        rankers["Supervised ML ranker"] = lambda item: (
+            item.get("ml_score", 0),
+            item["final_score"],
+            item["knn_score"],
+            -item["missing_count"],
+        )
+    return rankers
 
 
 def run_evaluation(
@@ -150,7 +158,7 @@ def run_evaluation(
 ) -> Dict:
     recommender = recommender or SmartKitchenRecommender("recipes_clean.json")
     profile = profile if profile is not None else UserPreferenceStore("user_profile.json").snapshot()
-    rankers = get_rankers()
+    rankers = get_rankers(include_ml_ranker=recommender.ml_ranker is not None)
     per_ranker_results = {name: [] for name in rankers}
     query_results = []
 
@@ -176,6 +184,9 @@ def run_evaluation(
     return {
         "top_k": TOP_K,
         "query_count": len(EVALUATION_QUERIES),
+        "ml_ranker_available": recommender.ml_ranker is not None,
+        "ml_training": recommender.ml_ranker.get("training") if recommender.ml_ranker else None,
+        "ml_feature_weights": recommender.ml_ranker.get("feature_weights", []) if recommender.ml_ranker else [],
         "relevance_proxy": "matched>=2, missing<=6, coverage>=0.25, knn>=0.10",
         "candidate_filter": f"knn>={MIN_SCORE}, matched>={MIN_MATCHED_COUNT}, missing<={MAX_MISSING_COUNT}",
         "aggregate_rows": [aggregate(results) for results in per_ranker_results.values()],

@@ -289,6 +289,25 @@
                         {% endfor %}
                     </div>
                 {% endif %}
+
+                {% if score_detail and score_detail.ml_ranker_available %}
+                    <div class="score-panel">
+                        <div class="score-panel-head">
+                            <span>Supervised ML Ranker</span>
+                            <span>{{ score_detail.ml_probability_percent }}%</span>
+                        </div>
+                        <p class="score-formula">{{ score_detail.ml_score_formula }}</p>
+                        {% for component in score_detail.ml_contributions %}
+                            <div class="score-row">
+                                <span>{{ component.label }}</span>
+                                <span class="score-track">
+                                    <span class="score-fill {{ component.kind }}" style="width: {{ component.bar_width }}%;"></span>
+                                </span>
+                                <span class="score-value">{{ component.signed_value }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </section>
         {% endif %}
 

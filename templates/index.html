@@ -1706,6 +1706,9 @@
                                 <span class="badge">Matched: {{ recipe.matched_count }}</span>
                                 <span class="badge">Missing: {{ recipe.missing_count }}</span>
                                 <span class="badge">Calories: {{ recipe.calories }}</span>
+                                {% if recipe.ml_ranker_available %}
+                                    <span class="badge personalized">ML: {{ recipe.ml_probability_percent }}%</span>
+                                {% endif %}
                                 {% for label in recipe.dietary_labels %}
                                     <span class="badge personalized">{{ label }}</span>
                                 {% endfor %}
@@ -1730,6 +1733,25 @@
                                     </div>
                                 {% endfor %}
                             </div>
+
+                            {% if recipe.ml_ranker_available %}
+                                <div class="score-panel">
+                                    <div class="score-panel-head">
+                                        <span>Supervised ML Ranker</span>
+                                        <span>{{ recipe.ml_probability_percent }}%</span>
+                                    </div>
+                                    <p class="score-formula">{{ recipe.ml_score_formula }}</p>
+                                    {% for component in recipe.ml_contributions[:4] %}
+                                        <div class="score-row">
+                                            <span>{{ component.label }}</span>
+                                            <span class="score-track">
+                                                <span class="score-fill {{ component.kind }}" style="width: {{ component.bar_width }}%;"></span>
+                                            </span>
+                                            <span class="score-value">{{ component.signed_value }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
 
                             <div class="action-row">
                                 <form method="POST">
