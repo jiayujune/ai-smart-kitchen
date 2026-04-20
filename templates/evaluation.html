@@ -44,6 +44,51 @@
             background-size: 32px 32px, 32px 32px;
         }
 
+        .cursor-spotlight,
+        .cursor-trail {
+            position: fixed;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            opacity: 0;
+            transform: translate3d(-50%, -50%, 0);
+            transition: opacity 0.22s ease;
+            z-index: 9999;
+        }
+
+        .cursor-spotlight {
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle, rgba(34, 211, 238, 0.18) 0 9%, rgba(14, 165, 233, 0.09) 20%, rgba(2, 6, 23, 0) 62%);
+            mix-blend-mode: screen;
+            filter: blur(5px);
+        }
+
+        .cursor-trail {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(34, 211, 238, 0.86);
+            background: rgba(34, 211, 238, 0.18);
+            box-shadow:
+                0 0 16px rgba(34, 211, 238, 0.62),
+                0 0 34px rgba(14, 165, 233, 0.28);
+        }
+
+        body.cursor-active .cursor-spotlight,
+        body.cursor-active .cursor-trail {
+            opacity: 1;
+        }
+
+        @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+            .cursor-spotlight,
+            .cursor-trail {
+                display: none;
+            }
+        }
+
         .page {
             max-width: 1180px;
             margin: 28px auto 48px;
@@ -261,6 +306,9 @@
     </style>
 </head>
 <body>
+    <div class="cursor-spotlight" id="cursorSpotlight" aria-hidden="true"></div>
+    <div class="cursor-trail" id="cursorTrail" aria-hidden="true"></div>
+
     <main class="page">
         <a class="back-link" href="{{ url_for('index') }}">Back to Recommender</a>
 
@@ -404,5 +452,50 @@
             {% endfor %}
         </section>
     </main>
+    <script>
+        const cursorSpotlight = document.getElementById("cursorSpotlight");
+        const cursorTrail = document.getElementById("cursorTrail");
+        let cursorX = window.innerWidth / 2;
+        let cursorY = window.innerHeight / 2;
+        let trailX = cursorX;
+        let trailY = cursorY;
+        let cursorFrame = null;
+
+        function updateCursorGlow() {
+            trailX += (cursorX - trailX) * 0.18;
+            trailY += (cursorY - trailY) * 0.18;
+
+            if (cursorSpotlight) {
+                cursorSpotlight.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%)`;
+            }
+
+            if (cursorTrail) {
+                cursorTrail.style.transform = `translate3d(${trailX}px, ${trailY}px, 0) translate(-50%, -50%)`;
+            }
+
+            cursorFrame = window.requestAnimationFrame(updateCursorGlow);
+        }
+
+        function startCursorGlow() {
+            if (!window.matchMedia("(pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                return;
+            }
+
+            document.body.classList.add("cursor-active");
+            if (!cursorFrame) {
+                cursorFrame = window.requestAnimationFrame(updateCursorGlow);
+            }
+        }
+
+        window.addEventListener("pointermove", (event) => {
+            cursorX = event.clientX;
+            cursorY = event.clientY;
+            startCursorGlow();
+        });
+
+        window.addEventListener("pointerleave", () => {
+            document.body.classList.remove("cursor-active");
+        });
+    </script>
 </body>
 </html>
