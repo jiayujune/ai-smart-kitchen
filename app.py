@@ -5,6 +5,7 @@ from urllib import error, request as urlrequest
 
 from flask import Flask, abort, jsonify, render_template, request, session
 
+from evaluation import run_evaluation
 from recommender import SmartKitchenRecommender
 from user_preferences import UserPreferenceStore
 
@@ -315,6 +316,15 @@ def reset_chat():
     return jsonify({"ok": True})
 
 
+@app.route("/evaluation")
+def evaluation_dashboard():
+    report = run_evaluation(
+        recommender=recommender,
+        profile=preferences.snapshot(),
+    )
+    return render_template("evaluation.html", report=report)
+
+
 @app.route("/recipe/<int:recipe_id>")
 def recipe_detail(recipe_id: int):
     recipe = recommender.get_recipe_by_id(recipe_id)
@@ -333,6 +343,14 @@ def recipe_detail(recipe_id: int):
     missing_items = sorted(item for item in recipe_ingredients if item not in set(normalized_items))
     pantry_staples = set(preferences.pantry_staples())
     missing_items = [item for item in missing_items if item not in pantry_staples]
+    score_detail = None
+    if normalized_items:
+        score_detail = recommender.score_recipe(
+            recipe=recipe,
+            normalized_user_ingredients=set(normalized_items),
+            pantry_staples=pantry_staples,
+            user_profile=preferences.snapshot(),
+        )
 
     return render_template(
         "recipe_detail.html",
@@ -345,6 +363,7 @@ def recipe_detail(recipe_id: int):
         matched_items=matched_items,
         missing_items=missing_items,
         nutrition_items=build_nutrition_items(recipe.get("nutrition", [])),
+        score_detail=score_detail,
     )
 
 

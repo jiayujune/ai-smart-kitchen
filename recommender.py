@@ -415,6 +415,17 @@ class SmartKitchenRecommender:
             return f"{fit_message} {reason_text}. {health_label} calorie level."
         return f"{fit_message} {health_label} calorie level."
 
+    def compute_calorie_bonus(self, calories: Optional[float]) -> float:
+        if calories is None:
+            return 0.0
+        if calories <= 350:
+            return 0.12
+        if calories <= 600:
+            return 0.06
+        if calories > 800:
+            return -0.18
+        return 0.0
+
     def compute_base_score(
         self,
         knn_score: float,
@@ -424,14 +435,7 @@ class SmartKitchenRecommender:
         missing_count: int,
         calories: Optional[float],
     ) -> float:
-        calorie_bonus = 0.0
-        if calories is not None:
-            if calories <= 350:
-                calorie_bonus = 0.12
-            elif calories <= 600:
-                calorie_bonus = 0.06
-            elif calories > 800:
-                calorie_bonus = -0.18
+        calorie_bonus = self.compute_calorie_bonus(calories)
 
         return round(
             knn_score * 0.45
@@ -484,6 +488,156 @@ class SmartKitchenRecommender:
 
         return round(bonus, 4), reasons[:2]
 
+    def build_score_breakdown(
+        self,
+        knn_score: float,
+        coverage: float,
+        overlap: float,
+        matched_count: int,
+        missing_count: int,
+        calorie_bonus: float,
+        personalization_bonus: float,
+    ) -> List[Dict]:
+        components = [
+            {
+                "label": "KNN similarity",
+                "value": round(knn_score * 0.45, 4),
+                "detail": f"{knn_score} x 0.45",
+            },
+            {
+                "label": "Ingredient coverage",
+                "value": round(coverage * 0.25, 4),
+                "detail": f"{round(coverage, 3)} x 0.25",
+            },
+            {
+                "label": "Pantry overlap",
+                "value": round(overlap * 0.10, 4),
+                "detail": f"{round(overlap, 3)} x 0.10",
+            },
+            {
+                "label": "Matched items",
+                "value": round(matched_count * 0.08, 4),
+                "detail": f"{matched_count} x 0.08",
+            },
+            {
+                "label": "Missing penalty",
+                "value": round(-missing_count * 0.05, 4),
+                "detail": f"-{missing_count} x 0.05",
+            },
+            {
+                "label": "Calorie adjustment",
+                "value": round(calorie_bonus, 4),
+                "detail": "light/balanced bonus or high-calorie penalty",
+            },
+            {
+                "label": "Personalization",
+                "value": round(personalization_bonus, 4),
+                "detail": "likes, saves, views, and frequent ingredients",
+            },
+        ]
+
+        for component in components:
+            value = component["value"]
+            component["kind"] = "positive" if value > 0 else "negative" if value < 0 else "neutral"
+            component["bar_width"] = min(100, round(abs(value) / 0.45 * 100))
+            component["signed_value"] = f"{value:+.4f}"
+
+        return components
+
+    def score_recipe(
+        self,
+        recipe: Dict,
+        normalized_user_ingredients: Set[str],
+        pantry_staples: Set[str],
+        user_profile: Optional[Dict] = None,
+        dietary_filters: Optional[List[str]] = None,
+    ) -> Dict:
+        recipe_id = recipe.get("id")
+        recipe_ingredients = self.recipe_ingredient_cache.get(recipe_id) or self.normalize_ingredients(
+            recipe.get("ingredients", [])
+        )
+        coverage, overlap, matched, missing, staple_matches = self.compute_match_details(
+            normalized_user_ingredients,
+            recipe_ingredients,
+            pantry_staples,
+        )
+        knn_score, cosine_similarity, jaccard_similarity = self.compute_knn_similarity(
+            normalized_user_ingredients,
+            recipe_ingredients,
+            pantry_staples,
+        )
+
+        matched_count = len(matched)
+        missing_count = len(missing)
+        calories = self.extract_calories(recipe.get("nutrition", []))
+        calorie_bonus = self.compute_calorie_bonus(calories)
+        base_score = self.compute_base_score(
+            knn_score=knn_score,
+            coverage=coverage,
+            overlap=overlap,
+            matched_count=matched_count,
+            missing_count=missing_count,
+            calories=calories,
+        )
+        personalization_bonus, personalization_reasons = self.compute_personalization_bonus(
+            recipe=recipe,
+            recipe_ingredients=recipe_ingredients,
+            user_profile=user_profile,
+        )
+        final_score = round(base_score + personalization_bonus, 4)
+        health_label = self.build_health_label(calories)
+
+        liked = set(user_profile.get("liked_recipes", [])) if user_profile else set()
+        favorites = set(user_profile.get("favorites", [])) if user_profile else set()
+
+        return {
+            "id": recipe_id,
+            "name": recipe.get("name", "unknown recipe"),
+            "score": knn_score,
+            "knn_score": knn_score,
+            "cosine_similarity": cosine_similarity,
+            "jaccard_similarity": jaccard_similarity,
+            "coverage_score": round(coverage, 3),
+            "overlap_score": round(overlap, 3),
+            "matched_ingredients": matched,
+            "missing_ingredients": missing,
+            "total_ingredients": len(recipe_ingredients),
+            "matched_count": matched_count,
+            "missing_count": missing_count,
+            "calories": calories,
+            "health_label": health_label,
+            "calorie_bonus": calorie_bonus,
+            "base_score": base_score,
+            "personalization_bonus": personalization_bonus,
+            "final_score": final_score,
+            "match_percent": round(knn_score * 100),
+            "is_liked": recipe_id in liked,
+            "is_favorite": recipe_id in favorites,
+            "dietary_labels": self.dietary_labels_for_recipe(recipe_ingredients, dietary_filters),
+            "score_breakdown": self.build_score_breakdown(
+                knn_score=knn_score,
+                coverage=coverage,
+                overlap=overlap,
+                matched_count=matched_count,
+                missing_count=missing_count,
+                calorie_bonus=calorie_bonus,
+                personalization_bonus=personalization_bonus,
+            ),
+            "score_formula": (
+                "Final = 0.45*KNN + 0.25*coverage + 0.10*overlap + "
+                "0.08*matched - 0.05*missing + calorie adjustment + personalization"
+            ),
+            "explanation": self.build_explanation(
+                matched_count=matched_count,
+                missing_count=missing_count,
+                health_label=health_label,
+                matched=matched,
+                missing=missing,
+                staple_matches=staple_matches,
+                personalization_reasons=personalization_reasons,
+            ),
+        }
+
     def recommend_recipes(
         self,
         user_ingredients: List[str],
@@ -501,94 +655,39 @@ class SmartKitchenRecommender:
 
         recommendations = []
         pantry_staples = self.resolve_pantry_staples(user_profile)
-        liked = set(user_profile.get("liked_recipes", [])) if user_profile else set()
-        favorites = set(user_profile.get("favorites", [])) if user_profile else set()
 
         for recipe in self.recipes:
             recipe_name = recipe.get("name", "unknown recipe")
-            recipe_id = recipe.get("id")
 
             if not self.is_reasonable_recipe_name(recipe_name):
                 continue
 
+            recipe_id = recipe.get("id")
             recipe_ingredients = self.recipe_ingredient_cache.get(recipe_id) or self.normalize_ingredients(
                 recipe.get("ingredients", [])
             )
             if not self.recipe_matches_dietary_filters(recipe_ingredients, dietary_filters):
                 continue
 
-            coverage, overlap, matched, missing, staple_matches = self.compute_match_details(
-                normalized_user_ingredients,
-                recipe_ingredients,
-                pantry_staples,
-            )
-            knn_score, cosine_similarity, jaccard_similarity = self.compute_knn_similarity(
-                normalized_user_ingredients,
-                recipe_ingredients,
-                pantry_staples,
-            )
-
-            matched_count = len(matched)
-            missing_count = len(missing)
-            calories = self.extract_calories(recipe.get("nutrition", []))
-
-            if calories is not None and calories > 900:
-                continue
-
-            if knn_score < min_score or matched_count < min_matched_count or missing_count > max_missing_count:
-                continue
-
-            base_score = self.compute_base_score(
-                knn_score=knn_score,
-                coverage=coverage,
-                overlap=overlap,
-                matched_count=matched_count,
-                missing_count=missing_count,
-                calories=calories,
-            )
-            personalization_bonus, personalization_reasons = self.compute_personalization_bonus(
+            scored_recipe = self.score_recipe(
                 recipe=recipe,
-                recipe_ingredients=recipe_ingredients,
+                normalized_user_ingredients=normalized_user_ingredients,
+                pantry_staples=pantry_staples,
                 user_profile=user_profile,
+                dietary_filters=dietary_filters,
             )
-            final_score = round(base_score + personalization_bonus, 4)
-            health_label = self.build_health_label(calories)
 
-            recommendations.append(
-                {
-                    "id": recipe_id,
-                    "name": recipe_name,
-                    "score": knn_score,
-                    "knn_score": knn_score,
-                    "cosine_similarity": cosine_similarity,
-                    "jaccard_similarity": jaccard_similarity,
-                    "coverage_score": round(coverage, 3),
-                    "overlap_score": round(overlap, 3),
-                    "matched_ingredients": matched,
-                    "missing_ingredients": missing,
-                    "total_ingredients": len(recipe_ingredients),
-                    "matched_count": matched_count,
-                    "missing_count": missing_count,
-                    "calories": calories,
-                    "health_label": health_label,
-                    "base_score": base_score,
-                    "personalization_bonus": personalization_bonus,
-                    "final_score": final_score,
-                    "match_percent": round(knn_score * 100),
-                    "is_liked": recipe_id in liked,
-                    "is_favorite": recipe_id in favorites,
-                    "dietary_labels": self.dietary_labels_for_recipe(recipe_ingredients, dietary_filters),
-                    "explanation": self.build_explanation(
-                        matched_count=matched_count,
-                        missing_count=missing_count,
-                        health_label=health_label,
-                        matched=matched,
-                        missing=missing,
-                        staple_matches=staple_matches,
-                        personalization_reasons=personalization_reasons,
-                    ),
-                }
-            )
+            if scored_recipe["calories"] is not None and scored_recipe["calories"] > 900:
+                continue
+
+            if (
+                scored_recipe["knn_score"] < min_score
+                or scored_recipe["matched_count"] < min_matched_count
+                or scored_recipe["missing_count"] > max_missing_count
+            ):
+                continue
+
+            recommendations.append(scored_recipe)
 
         recommendations = self.sort_recommendations(recommendations, sort_mode)
 

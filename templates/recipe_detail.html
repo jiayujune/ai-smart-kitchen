@@ -147,6 +147,60 @@
             font-size: 1.15rem;
             color: var(--ink);
         }
+        .score-panel {
+            margin-top: 16px;
+            padding: 16px;
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            background: rgba(2, 6, 23, 0.34);
+        }
+        .score-panel-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+        .score-formula {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+        .score-row {
+            display: grid;
+            grid-template-columns: minmax(130px, 1fr) minmax(90px, 1.4fr) 80px;
+            gap: 12px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+        .score-row + .score-row {
+            margin-top: 9px;
+        }
+        .score-track {
+            height: 9px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.16);
+        }
+        .score-fill {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--accent-deep);
+        }
+        .score-fill.negative {
+            background: var(--warning);
+        }
+        .score-fill.neutral {
+            background: var(--muted);
+        }
+        .score-value {
+            text-align: right;
+            font-weight: 800;
+            color: var(--ink);
+        }
         ol {
             margin: 0;
             padding-left: 22px;
@@ -214,6 +268,26 @@
                     </div>
                 {% else %}
                     <p class="subtitle">You already have the key ingredients for this recipe.</p>
+                {% endif %}
+
+                {% if score_detail %}
+                    <div class="score-panel">
+                        <div class="score-panel-head">
+                            <span>Explainable Score</span>
+                            <span>{{ score_detail.final_score }}</span>
+                        </div>
+                        <p class="subtitle" style="margin-bottom: 12px;">{{ score_detail.explanation }}</p>
+                        <p class="score-formula">{{ score_detail.score_formula }}</p>
+                        {% for component in score_detail.score_breakdown %}
+                            <div class="score-row" title="{{ component.detail }}">
+                                <span>{{ component.label }}</span>
+                                <span class="score-track">
+                                    <span class="score-fill {{ component.kind }}" style="width: {{ component.bar_width }}%;"></span>
+                                </span>
+                                <span class="score-value">{{ component.signed_value }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </section>
         {% endif %}

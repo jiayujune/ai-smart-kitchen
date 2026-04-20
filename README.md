@@ -10,6 +10,8 @@ AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi 
 - Smart pantry staples so common household items do not clutter missing-ingredient lists
 - Like, save, and recent-search history to make recommendations feel more personal over time
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
+- Explainable AI score breakdowns for every recommendation
+- Offline AI/ML evaluation script comparing baseline and similarity rankers
 - Built-in AI assistant for substitutions, meal triage, nutrition guidance, and quick cooking decisions
 - HUD-inspired frontend with real-time system styling, animated assistant states, and progressive response reveal
 
@@ -29,6 +31,76 @@ the system:
 4. Applies selected dietary filters when needed
 5. Applies calorie-aware and preference-aware adjustments
 6. Returns ranked recipe cards with explanation text and drill-down details
+
+## AI Method
+
+The recommender uses a hybrid, explainable ranking model. Each recipe is converted into a normalized ingredient set, then compared against the user's pantry input. The model combines:
+
+- KNN-style ingredient similarity
+- Cosine similarity
+- Jaccard similarity
+- Ingredient coverage
+- Pantry overlap
+- Missing-ingredient penalties
+- Calorie-aware adjustments
+- Lightweight personalization from likes, saves, views, and frequent ingredients
+
+The final ranking score is:
+
+```text
+Final Score = 0.45 * KNN similarity
+            + 0.25 * ingredient coverage
+            + 0.10 * pantry overlap
+            + 0.08 * matched ingredient count
+            - 0.05 * missing ingredient count
+            + calorie adjustment
+            + personalization bonus
+```
+
+## Explainable AI
+
+Each recipe card now shows an explainable score panel. The panel breaks the final score into individual positive and negative contributions, including similarity, coverage, matched ingredients, missing-ingredient penalty, calorie adjustment, and personalization. The recipe detail page reuses the same scoring logic so the explanation is consistent across the app.
+
+This makes the recommender easier to defend in an AI course presentation because users can see not only what was recommended, but why it was ranked highly.
+
+## Offline Evaluation
+
+The project includes `evaluation.py`, a local evaluation script that compares ranking strategies across representative pantry queries.
+
+Evaluated rankers:
+
+- Baseline matched ingredient count
+- Jaccard similarity
+- KNN similarity
+- Hybrid explainable score
+
+Metrics:
+
+- `Precision@8`: share of top recommendations that satisfy the relevance proxy
+- Average missing ingredients
+- Average match percentage
+- Average final score
+
+Run:
+
+```powershell
+python evaluation.py
+```
+
+You can also view the evaluation dashboard in the web app:
+
+```text
+http://127.0.0.1:5000/evaluation
+```
+
+Because the dataset does not include explicit user ratings, the script uses a transparent proxy label for relevance:
+
+```text
+matched_count >= 2
+missing_count <= 6
+coverage_score >= 0.25
+knn_score >= 0.10
+```
 
 ## Interface Overview
 
@@ -83,6 +155,10 @@ Stores lightweight user state in `user_profile.json`:
 
 Utility script for turning the raw recipe CSV into the cleaned JSON dataset used by the app.
 
+### `evaluation.py`
+
+Offline evaluation script for comparing simple baselines against the current hybrid recommender.
+
 ## Tech Stack
 
 - Python
@@ -100,6 +176,7 @@ Utility script for turning the raw recipe CSV into the cleaned JSON dataset used
 |-- recommender.py
 |-- user_preferences.py
 |-- clean_recipes.py
+|-- evaluation.py
 |-- recipes_clean.json
 |-- RAW_recipes.csv
 |-- user_profile.json

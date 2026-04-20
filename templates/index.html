@@ -144,6 +144,16 @@
             animation: pulse 1.8s ease-in-out infinite;
         }
 
+        .topbar-link {
+            color: var(--ink);
+            text-decoration: none;
+        }
+
+        .topbar-link:hover {
+            border-color: var(--line-strong);
+            color: var(--accent-strong);
+        }
+
         .hero-grid {
             display: grid;
             grid-template-columns: minmax(0, 1.2fr) 320px;
@@ -649,6 +659,70 @@
             background: rgba(34, 197, 94, 0.12);
             color: #86efac;
             border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .score-panel {
+            margin: 16px 0;
+            padding: 14px;
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            background: rgba(2, 6, 23, 0.36);
+        }
+
+        .score-panel-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            color: var(--ink);
+            font-weight: 800;
+        }
+
+        .score-formula {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .score-row {
+            display: grid;
+            grid-template-columns: minmax(120px, 1fr) minmax(90px, 1.2fr) 76px;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .score-row + .score-row {
+            margin-top: 8px;
+        }
+
+        .score-track {
+            height: 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.16);
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: var(--accent-strong);
+        }
+
+        .score-fill.negative {
+            background: var(--warning);
+        }
+
+        .score-fill.neutral {
+            background: var(--soft);
+        }
+
+        .score-value {
+            text-align: right;
+            font-weight: 800;
+            color: var(--ink);
         }
 
         .section-label {
@@ -1400,7 +1474,7 @@
             </div>
             <span class="status-pill">Live</span>
             <span class="status-pill">Synced</span>
-            <span class="status-pill">Pantry Node</span>
+            <a class="status-pill topbar-link" href="{{ url_for('evaluation_dashboard') }}">AI Evaluation</a>
         </div>
 
         <div class="hero">
@@ -1627,7 +1701,8 @@
                             <p class="recipe-copy">{{ recipe.explanation }}</p>
 
                             <div class="meta">
-                                <span class="badge">Score: {{ recipe.score }}</span>
+                                <span class="badge">Final: {{ recipe.final_score }}</span>
+                                <span class="badge">KNN: {{ recipe.score }}</span>
                                 <span class="badge">Matched: {{ recipe.matched_count }}</span>
                                 <span class="badge">Missing: {{ recipe.missing_count }}</span>
                                 <span class="badge">Calories: {{ recipe.calories }}</span>
@@ -1637,6 +1712,23 @@
                                 {% if recipe.personalization_bonus > 0 %}
                                     <span class="badge personalized">Personalized: +{{ recipe.personalization_bonus }}</span>
                                 {% endif %}
+                            </div>
+
+                            <div class="score-panel">
+                                <div class="score-panel-head">
+                                    <span>Explainable Score</span>
+                                    <span>{{ recipe.final_score }}</span>
+                                </div>
+                                <p class="score-formula">{{ recipe.score_formula }}</p>
+                                {% for component in recipe.score_breakdown %}
+                                    <div class="score-row" title="{{ component.detail }}">
+                                        <span>{{ component.label }}</span>
+                                        <span class="score-track">
+                                            <span class="score-fill {{ component.kind }}" style="width: {{ component.bar_width }}%;"></span>
+                                        </span>
+                                        <span class="score-value">{{ component.signed_value }}</span>
+                                    </div>
+                                {% endfor %}
                             </div>
 
                             <div class="action-row">
