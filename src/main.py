@@ -1,43 +1,59 @@
-from src.features.grocery import generate
-from src.preprocessing.data_cleaning import load_data
-from src.kitchen_csp.csp_solver import heuristic_search
-import streamlit as st
+import os
+import pandas as pd
+import ast
+from preprocessing.data_cleaning import clean_data
+from kitchen_csp.csp_solver import CSPSolver
+from features.nutrition import analyze
+from features.grocery import generate
+
+
+
+def load_data(path):
+    df = pd.read_csv(path)
+
+    df["ingredients"] = df["ingredients"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
+
+    return df.to_dict("records")
+
 
 def main():
-    # Streamlit interface
-    st.title("Smart AI Meal Planner")
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Input sliders for user goals
-    max_calories = st.slider('Max Calories', min_value=1000, max_value=3000, value=2000)
-    min_protein = st.slider('Min Protein (g)', min_value=0, max_value=200, value=50)
+    raw_path = os.path.join(BASE_DIR, "data/raw/RAW_recipes.csv")
+    processed_path = os.path.join(BASE_DIR, "data/processed/cleaned_recipes.csv")
 
-    # Show user inputs
-    st.write(f"Max Calories: {max_calories}")
-    st.write(f"Min Protein: {min_protein}")
+    # Step 1: Clean data
+    clean_data(raw_path, processed_path)
 
-    # Load recipes and apply constraints
-    recipes = load_data('data/processed/cleaned_recipes.csv')
+    # Step 2: Load cleaned data
+    recipes = load_data(processed_path)
+
+    # Step 3: Define constraints
     constraints = {
-        "max_calories": max_calories,
-        "min_protein": min_protein
+        "max_calories": 2000,
+        "diet": "vegetarian"
     }
 
-    # Apply heuristic search to get the best meal plan
-    meal_plan, total_calories, total_protein = heuristic_search(recipes, constraints)
+    # Step 4: Solve CSP
+    solver = CSPSolver(recipes, constraints)
+    solution = solver.backtrack()
 
-    if meal_plan:
-        st.write("🍽 Meal Plan:")
-        for meal, recipe in meal_plan.items():
-            st.write(f"{meal.capitalize()}: {recipe.name}")
+    # Step 5: Output
+    if solution:
+        print("\n🍽 Meal Plan:")
+        for meal, recipe in solution.items():
+            print(f"{meal}: {recipe['name']}")
 
-        st.write("\n🥗 Nutrition:")
-        st.write(f"Total Calories: {total_calories}")
-        st.write(f"Total Protein: {total_protein}")
+        print("\n🥗 Nutrition:")
+        print(analyze(solution))
 
-        st.write("\n🛒 Grocery List:")
-        st.write(generate(meal_plan))
+        print("\n🛒 Grocery List:")
+        print(generate(solution))
     else:
-        st.write("❌ No solution found that meets the constraints.")
+        print("❌ No solution found")
+
 
 if __name__ == "__main__":
     main()
