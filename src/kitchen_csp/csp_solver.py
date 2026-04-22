@@ -40,9 +40,9 @@ def heuristic_search(recipes, constraints):
 
 
 def diet_constraint(recipe, diet):
-    if diet == "Any":
+    if diet == "any":
         return True
-    if diet == "Vegetarian":
+    if diet == "vegetarian":
         # Define a list of non-vegetarian ingredients
         non_vegetarian_ingredients = ["beef", "chicken", "pork", "fish", "tuna", "ham", "bacon", "lamb", "duck",
                                       "turkey", "shrimp", "crab", "salmon"]
@@ -61,4 +61,3 @@ def variety_constraint(assignment):
 
     main_ingredients = [r.ingredients[0] for r in assignment.values()]
     return len(set(main_ingredients)) >= 2  # Ensure at least 2 different ingredients
-
