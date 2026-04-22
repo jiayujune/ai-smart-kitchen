@@ -210,6 +210,79 @@ class SmartKitchenRecommender:
             "sugar",
             "butter",
         }
+        self.substitution_map = {
+            "butter": ["oil", "olive oil", "margarine", "ghee", "applesauce"],
+            "oil": ["olive oil", "vegetable oil", "canola oil", "butter"],
+            "olive oil": ["oil", "vegetable oil", "canola oil", "butter"],
+            "vegetable oil": ["oil", "olive oil", "canola oil", "butter"],
+            "egg": ["ground flaxseed", "chia seed gel", "applesauce", "banana", "yogurt"],
+            "milk": ["almond milk", "soy milk", "oat milk", "water", "cream"],
+            "cream": ["milk", "half and half", "evaporated milk", "coconut milk", "greek yogurt"],
+            "sour cream": ["greek yogurt", "plain yogurt", "cream cheese", "coconut yogurt"],
+            "yogurt": ["sour cream", "greek yogurt", "buttermilk", "coconut yogurt"],
+            "cheese": ["mozzarella cheese", "cheddar cheese", "parmesan cheese", "nutritional yeast"],
+            "parmesan cheese": ["cheese", "pecorino", "nutritional yeast"],
+            "flour": ["whole wheat flour", "all purpose flour", "cornstarch", "oat flour"],
+            "bread": ["tortilla", "pita", "cracker", "rice"],
+            "pasta": ["rice", "noodle", "zucchini noodle", "spaghetti squash"],
+            "rice": ["quinoa", "couscous", "pasta", "cauliflower rice"],
+            "tomato": ["tomato sauce", "tomato paste", "canned tomato", "red bell pepper"],
+            "tomato sauce": ["tomato paste", "canned tomato", "tomato"],
+            "onion": ["shallot", "green onion", "leek", "onion powder"],
+            "garlic": ["garlic powder", "shallot", "onion"],
+            "bell pepper": ["red bell pepper", "green bell pepper", "poblano", "zucchini"],
+            "carrot": ["sweet potato", "parsnip", "bell pepper"],
+            "potato": ["sweet potato", "cauliflower", "turnip"],
+            "chicken breast": ["chicken thigh", "turkey breast", "tofu", "chickpea"],
+            "chicken": ["chicken breast", "chicken thigh", "turkey", "tofu"],
+            "beef": ["ground beef", "turkey", "mushroom", "lentil"],
+            "ground beef": ["beef", "ground turkey", "mushroom", "lentil"],
+            "bacon": ["ham", "turkey bacon", "smoked paprika", "mushroom"],
+            "shrimp": ["chicken", "tofu", "scallop", "fish"],
+            "fish": ["salmon", "tuna", "shrimp", "tofu"],
+            "sugar": ["honey", "maple syrup", "brown sugar"],
+            "honey": ["maple syrup", "sugar", "agave"],
+            "soy sauce": ["tamari", "coconut aminos", "salt"],
+            "vinegar": ["lemon juice", "lime juice", "white wine vinegar"],
+            "lemon juice": ["lime juice", "vinegar"],
+            "peanut butter": ["almond butter", "sunflower seed butter", "tahini"],
+            "peanut": ["almond", "cashew", "sunflower seed"],
+            "almond": ["peanut", "cashew", "sunflower seed"],
+        }
+        self.substitution_filter_overrides = {
+            "vegetarian": {
+                "tofu",
+                "chickpea",
+                "mushroom",
+                "lentil",
+            },
+            "vegan": {
+                "almond milk",
+                "soy milk",
+                "oat milk",
+                "coconut milk",
+                "coconut yogurt",
+                "ground flaxseed",
+                "chia seed gel",
+                "applesauce",
+                "banana",
+                "nutritional yeast",
+                "tofu",
+                "chickpea",
+                "mushroom",
+                "lentil",
+                "sunflower seed butter",
+                "tahini",
+            },
+            "dairy_free": {
+                "almond milk",
+                "soy milk",
+                "oat milk",
+                "coconut milk",
+                "coconut yogurt",
+                "nutritional yeast",
+            },
+        }
         self.recipes = self.load_recipes(recipe_file)
         self.recipe_lookup = {recipe.get("id"): recipe for recipe in self.recipes if recipe.get("id") is not None}
         self.recipe_ingredient_cache = self.build_recipe_ingredient_cache()
@@ -418,6 +491,66 @@ class SmartKitchenRecommender:
             return f"{fit_message} {reason_text}. {health_label} calorie level."
         return f"{fit_message} {health_label} calorie level."
 
+    def build_substitution_suggestions(
+        self,
+        missing: List[str],
+        user_ingredients: Set[str],
+        dietary_filters: Optional[List[str]] = None,
+        limit: int = 4,
+    ) -> List[Dict]:
+        suggestions = []
+        normalized_user = set(user_ingredients)
+
+        for ingredient in missing:
+            options = []
+            seen = set()
+            for raw_option in self.substitution_map.get(ingredient, []):
+                option = self.normalize_text(raw_option)
+                if not option or option == ingredient or option in seen:
+                    continue
+                if not self.substitution_matches_dietary_filters(option, dietary_filters):
+                    continue
+
+                seen.add(option)
+                options.append(
+                    {
+                        "name": option,
+                        "in_pantry": option in normalized_user,
+                    }
+                )
+
+            if not options:
+                continue
+
+            options.sort(key=lambda item: (not item["in_pantry"], item["name"]))
+            available = [item["name"] for item in options if item["in_pantry"]]
+            suggestions.append(
+                {
+                    "ingredient": ingredient,
+                    "options": options[:3],
+                    "available_options": available[:3],
+                    "has_pantry_match": bool(available),
+                }
+            )
+
+            if len(suggestions) >= limit:
+                break
+
+        return suggestions
+
+    def substitution_matches_dietary_filters(
+        self,
+        option: str,
+        dietary_filters: Optional[List[str]],
+    ) -> bool:
+        for filter_key in self.normalize_dietary_filters(dietary_filters):
+            if self.recipe_matches_dietary_filters({option}, [filter_key]):
+                continue
+            if option in self.substitution_filter_overrides.get(filter_key, set()):
+                continue
+            return False
+        return True
+
     def compute_calorie_bonus(self, calories: Optional[float]) -> float:
         if calories is None:
             return 0.0
@@ -604,6 +737,11 @@ class SmartKitchenRecommender:
             "overlap_score": round(overlap, 3),
             "matched_ingredients": matched,
             "missing_ingredients": missing,
+            "substitution_suggestions": self.build_substitution_suggestions(
+                missing=missing,
+                user_ingredients=normalized_user_ingredients,
+                dietary_filters=dietary_filters,
+            ),
             "total_ingredients": len(recipe_ingredients),
             "matched_count": matched_count,
             "missing_count": missing_count,

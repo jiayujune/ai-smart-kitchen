@@ -8,6 +8,7 @@ AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi 
 - Multiple ranking modes: `Best Match`, `Fewest Missing`, `Lowest Calories`, `Most Personalized`, and `ML Ranker`
 - Dietary filters for vegetarian, gluten-free, vegan, dairy-free, and nut-free recipe searches
 - Smart pantry staples so common household items do not clutter missing-ingredient lists
+- Missing-ingredient substitution suggestions with pantry-aware highlights
 - Like, save, and recent-search history to make recommendations feel more personal over time
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
 - Explainable AI score breakdowns for every recommendation
@@ -30,9 +31,10 @@ the system:
 2. Scores recipes based on ingredient coverage and overlap
 3. Penalizes recipes with too many missing ingredients
 4. Applies selected dietary filters when needed
-5. Applies calorie-aware and preference-aware adjustments
-6. Optionally ranks candidates with the supervised ML model
-7. Returns ranked recipe cards with explanation text and drill-down details
+5. Suggests practical substitutes for missing ingredients
+6. Applies calorie-aware and preference-aware adjustments
+7. Optionally ranks candidates with the supervised ML model
+8. Returns ranked recipe cards with explanation text and drill-down details
 
 ## AI Method
 
@@ -44,6 +46,7 @@ The recommender uses a hybrid, explainable ranking model. Each recipe is convert
 - Ingredient coverage
 - Pantry overlap
 - Missing-ingredient penalties
+- Pantry-aware substitution suggestions
 - Calorie-aware adjustments
 - Lightweight personalization from likes, saves, views, and frequent ingredients
 
@@ -97,6 +100,18 @@ Each recipe card now shows an explainable score panel. The panel breaks the fina
 
 This makes the recommender easier to defend in an AI course presentation because users can see not only what was recommended, but why it was ranked highly.
 
+## Substitution Suggestions
+
+For each recipe, the recommender checks missing ingredients against a curated substitution catalog. Suggested replacements are filtered through the active dietary rules and marked when the substitute is already present in the user's pantry input.
+
+Examples:
+
+- `butter` -> `oil`, `olive oil`, `applesauce`
+- `chicken breast` -> `chicken thigh`, `turkey breast`, `tofu`
+- `milk` -> `almond milk`, `soy milk`, `oat milk`, `water`
+
+These suggestions make the app more useful in realistic cooking situations because a recipe with missing ingredients may still be practical if the user has a reasonable substitute.
+
 ## Offline Evaluation
 
 The project includes `evaluation.py`, a local evaluation script that compares ranking strategies across representative pantry queries.
@@ -144,6 +159,7 @@ The current web app is designed like a compact AI control console instead of a p
 - Top status bar for system identity and live-state presentation
 - HUD-style search panel with dark glass surfaces and cyan/blue highlights
 - Sortable recommendation cards with match, missing, calorie, and personalization signals
+- Substitution panels for missing ingredients, including pantry-matched alternatives
 - Recent searches with per-item deletion
 - Pantry staple management for everyday kitchen defaults
 - AI assistant panel with:
