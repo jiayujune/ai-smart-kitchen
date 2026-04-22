@@ -97,8 +97,14 @@ def build_chat_context(
     active_dietary_labels = [DIETARY_FILTER_OPTIONS[item] for item in dietary_filters]
     top_results = []
     for item in results[:5]:
+        substitution_parts = []
+        for suggestion in item.get("substitution_suggestions", [])[:2]:
+            option_names = [option["name"] for option in suggestion.get("options", [])[:2]]
+            if option_names:
+                substitution_parts.append(f"{suggestion['ingredient']} -> {', '.join(option_names)}")
+        substitution_text = f" | substitutions={'; '.join(substitution_parts)}" if substitution_parts else ""
         top_results.append(
-            f"- {item['name']} | match={item['match_percent']}% | missing={item['missing_count']} | calories={item['calories']} | why={item['explanation']}"
+            f"- {item['name']} | match={item['match_percent']}% | missing={item['missing_count']} | calories={item['calories']}{substitution_text} | why={item['explanation']}"
         )
 
     result_block = "\n".join(top_results) if top_results else "- No strong results yet."
