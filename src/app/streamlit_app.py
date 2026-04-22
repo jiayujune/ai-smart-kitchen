@@ -18,7 +18,7 @@ st.title("🍽 Smart AI Meal Planner (Heuristic)")
 # User Inputs
 max_calories = st.slider("Max Calories", 1000, 3000, 2000)
 min_protein = st.slider("Min Protein (g)", 0, 200, 50)
-diet = st.selectbox("Select Diet", ["Any", "Vegetarian"])
+diet = st.selectbox("Select Diet", ["any", "vegetarian"])
 
 # Load Data
 recipes = load_data("data/processed/cleaned_recipes.csv")
