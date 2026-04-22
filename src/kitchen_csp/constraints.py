@@ -3,10 +3,6 @@ def calorie_constraint(assignment, max_calories):
     return total <= max_calories
 
 
-def diet_constraint(recipe, diet):
-    return diet == "any" or recipe.diet == diet
-
-
 def no_repeat_constraint(assignment):
     names = [r.name for r in assignment.values()]
     return len(names) == len(set(names))
