@@ -1,6 +1,7 @@
 import json
 import math
 import re
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from ml_model import attach_ml_prediction, load_ml_ranker
@@ -895,7 +896,8 @@ class SmartKitchenRecommender:
 
 
 if __name__ == "__main__":
-    recommender = SmartKitchenRecommender("recipes_clean.json")
+    data_dir = Path(__file__).resolve().parents[1] / "data"
+    recommender = SmartKitchenRecommender(data_dir / "recipes_clean.json")
     user_items = ["egg", "tomato", "rice", "onion"]
     results = recommender.recommend_recipes(
         user_items,

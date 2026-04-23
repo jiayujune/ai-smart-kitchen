@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from typing import Dict, List
 from urllib import error, request as urlrequest
 
@@ -11,8 +12,10 @@ from user_preferences import UserPreferenceStore
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "smart-kitchen-dev-secret")
-recommender = SmartKitchenRecommender("recipes_clean.json")
-preferences = UserPreferenceStore("user_profile.json")
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data"
+recommender = SmartKitchenRecommender(DATA_DIR / "recipes_clean.json")
+preferences = UserPreferenceStore(DATA_DIR / "user_profile.json")
 
 DEFAULT_SETTINGS = {
     "top_k": 8,

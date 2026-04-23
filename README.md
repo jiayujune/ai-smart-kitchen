@@ -2,6 +2,14 @@
 
 AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi HUD interface, interactive recipe controls, and an AI cooking assistant. The app helps users turn available ingredients into realistic meal options by ranking recipes against pantry fit, missing items, calorie profile, and lightweight preference history.
 
+## Abstract
+
+This project builds an AI-powered recipe recommendation system for pantry-first cooking. Given a user's available ingredients, the system cleans and normalizes recipe data, engineers ingredient-matching and nutrition features, ranks recipes through content-based similarity and supervised learning, and explains why each recommendation appears. The final web app includes dietary filters, substitution suggestions, user preference tracking, an AI cooking assistant, and an evaluation dashboard for comparing traditional, neural-network, and heuristic ranking methods.
+
+## Developers
+
+- Jiayu
+
 ## Highlights
 
 - Pantry-first recipe search using ingredient normalization and overlap scoring
@@ -12,8 +20,8 @@ AI Smart Kitchen is a Flask-based pantry-first recipe recommender with a sci-fi 
 - Like, save, and recent-search history to make recommendations feel more personal over time
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
 - Explainable AI score breakdowns for every recommendation
-- Supervised Logistic Regression ranker trained from pseudo-labeled recipe relevance data
-- Offline AI/ML evaluation dashboard comparing baseline, similarity, hybrid, and supervised ML rankers
+- Three supervised ML models trained from pseudo-labeled recipe relevance data
+- Offline AI/ML evaluation dashboard comparing baseline, similarity, hybrid, traditional ML, and neural network rankers
 - Built-in AI assistant for substitutions, meal triage, nutrition guidance, and quick cooking decisions
 - HUD-inspired frontend with real-time system styling, animated assistant states, and progressive response reveal
 
@@ -62,9 +70,13 @@ Final Score = 0.45 * KNN similarity
             + personalization bonus
 ```
 
-## Supervised ML Ranker
+## Supervised ML Rankers
 
-The project also includes a supervised machine learning ranker. It trains a pure-Python Logistic Regression model on query-recipe pairs. Each pair becomes a feature vector using signals already computed by the recommender:
+The project also includes a supervised machine learning model suite. It trains three pure-Python models on query-recipe pairs:
+
+- Logistic Regression
+- Decision Tree
+- MLP Neural Network
 
 - KNN, cosine, and Jaccard similarity
 - Ingredient coverage and pantry overlap
@@ -83,16 +95,16 @@ label = 0 otherwise
 Train or refresh the supervised model:
 
 ```powershell
-python train_model.py
+python code/train_model.py
 ```
 
 The trained model is saved to:
 
 ```text
-models/recipe_ranker.json
+data/models/recipe_ranker.json
 ```
 
-When that file exists, the app automatically enables the `ML Ranker` sorting mode and displays the predicted relevance probability on recipe cards.
+When that file exists, the app automatically enables the `ML Ranker` sorting mode and displays the predicted relevance probability on recipe cards. The app serves the trained model with the strongest test F1 score.
 
 ## Explainable AI
 
@@ -134,7 +146,7 @@ Metrics:
 Run:
 
 ```powershell
-python evaluation.py
+python code/evaluation.py
 ```
 
 You can also view the evaluation dashboard in the web app:
@@ -151,6 +163,14 @@ missing_count <= 6
 coverage_score >= 0.25
 knn_score >= 0.10
 ```
+
+## Result Analysis
+
+The model suite compares traditional and neural-network approaches on the same engineered recipe relevance features. Logistic Regression gives interpretable learned weights, Decision Tree gives non-linear rule splits, and the MLP Neural Network captures more flexible feature interactions. The evaluation dashboard reports train and test accuracy, precision, recall, and F1 for all three supervised models, making it easier to detect overfitting or underfitting.
+
+Current offline ranking results show that the hybrid explainable ranker is strong for reducing missing ingredients, while the supervised ML ranker preserves high relevance using learned probabilities. The best model can vary as pseudo-labels and user feedback data change, so `train_model.py` stores all trained model metrics and serves the model with the strongest test F1.
+
+Limitations remain: labels are pseudo-generated rather than collected from real users, evaluation queries are representative but small, and dietary/allergy logic is rule-based rather than medically certified. A natural next step is to collect real user interaction labels from clicks, likes, saves, and ignored recommendations, then retrain and compare the supervised models again.
 
 ## Interface Overview
 
@@ -170,7 +190,7 @@ The current web app is designed like a compact AI control console instead of a p
 
 ## Core Components
 
-### `app.py`
+### `code/app.py`
 
 Flask application entry point. Handles:
 
@@ -180,7 +200,7 @@ Flask application entry point. Handles:
 - recipe detail routes
 - AI assistant requests and chat reset behavior
 
-### `recommender.py`
+### `code/recommender.py`
 
 Implements the rule-based recommendation engine:
 
@@ -193,7 +213,7 @@ Implements the rule-based recommendation engine:
 
 ### `user_preferences.py`
 
-Stores lightweight user state in `user_profile.json`:
+Stores lightweight user state in `data/user_profile.json`:
 
 - favorites
 - liked recipes
@@ -202,19 +222,19 @@ Stores lightweight user state in `user_profile.json`:
 - recipe interaction history
 - pantry staples
 
-### `clean_recipes.py`
+### `code/clean_recipes.py`
 
 Utility script for turning the raw recipe CSV into the cleaned JSON dataset used by the app.
 
-### `evaluation.py`
+### `code/evaluation.py`
 
 Offline evaluation script for comparing simple baselines, similarity rankers, the hybrid recommender, and the supervised ML ranker.
 
-### `train_model.py`
+### `code/train_model.py`
 
-Builds pseudo-labeled training data and trains the Logistic Regression recipe ranker.
+Builds pseudo-labeled training data and trains Logistic Regression, Decision Tree, and MLP Neural Network rankers.
 
-### `ml_model.py`
+### `code/ml_model.py`
 
 Loads the trained model, extracts feature vectors, predicts recipe relevance probability, and builds ML feature contribution explanations.
 
@@ -231,23 +251,30 @@ Loads the trained model, extracts feature vectors, predicts recipe relevance pro
 
 ```text
 .
-|-- app.py
-|-- recommender.py
-|-- user_preferences.py
-|-- ml_model.py
-|-- train_model.py
-|-- clean_recipes.py
-|-- evaluation.py
-|-- models/
-|   `-- recipe_ranker.json
-|-- recipes_clean.json
-|-- RAW_recipes.csv
-|-- user_profile.json
-|-- templates/
-|   |-- index.html
-|   |-- evaluation.html
-|   `-- recipe_detail.html
-`-- AI_Recommendation_system.ipynb
+|-- requirements.txt
+|-- code/
+|   |-- app.py
+|   |-- recommender.py
+|   |-- user_preferences.py
+|   |-- ml_model.py
+|   |-- train_model.py
+|   |-- clean_recipes.py
+|   |-- evaluation.py
+|   |-- AI_Recommendation_system.ipynb
+|   `-- templates/
+|       |-- index.html
+|       |-- evaluation.html
+|       `-- recipe_detail.html
+|-- data/
+|   |-- RAW_recipes.csv
+|   |-- recipes_clean.json
+|   |-- user_profile.json
+|   `-- models/
+|       `-- recipe_ranker.json
+|-- resources/
+|   |-- README.md
+|   `-- model_analysis.md
+`-- README.md
 ```
 
 ## Setup
@@ -262,13 +289,13 @@ python -m venv .venv
 ### 2. Install dependencies
 
 ```powershell
-pip install flask pandas
+pip install -r requirements.txt
 ```
 
 ### 3. Run the app
 
 ```powershell
-python app.py
+python code/app.py
 ```
 
 Then open:
@@ -288,7 +315,7 @@ You can provide it in either of two ways:
 
 ```powershell
 $env:GROQ_API_KEY="your_key_here"
-python app.py
+python code/app.py
 ```
 
 Optional model override:
@@ -299,10 +326,10 @@ $env:GROQ_CHAT_MODEL="llama-3.1-8b-instant"
 
 ## Optional: Rebuild The Cleaned Dataset
 
-If you want to regenerate `recipes_clean.json` from `RAW_recipes.csv`:
+If you want to regenerate `data/recipes_clean.json` from `data/RAW_recipes.csv`:
 
 ```powershell
-python clean_recipes.py
+python code/clean_recipes.py
 ```
 
 ## Current Limitations

@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 
-MODEL_PATH = Path("models") / "recipe_ranker.json"
+BASE_DIR = Path(__file__).resolve().parents[1]
+MODEL_PATH = BASE_DIR / "data" / "models" / "recipe_ranker.json"
 
 FEATURE_NAMES = [
     "knn_score",
@@ -86,15 +87,35 @@ def load_ml_ranker(path: Path = MODEL_PATH) -> Optional[Dict]:
     return model
 
 
+def get_serving_model(model: Dict) -> Dict:
+    if model.get("model_type") != "model_suite":
+        return model
+
+    default_model_type = model.get("default_model_type", "logistic_regression")
+    for candidate in model.get("models", []):
+        if candidate.get("model_type") == default_model_type:
+            return candidate
+    return model.get("models", [model])[0]
+
+
 def predict_probability(candidate: Dict, model: Optional[Dict]) -> Optional[float]:
     if not model:
         return None
 
+    serving_model = get_serving_model(model)
     features = extract_feature_vector(candidate)
-    means = model["means"]
-    stds = model["stds"]
-    weights = model["weights"]
-    logit = float(model["intercept"])
+
+    if serving_model.get("model_type") == "decision_tree":
+        return round(predict_tree_probability(serving_model["tree"], features), 4)
+
+    if serving_model.get("model_type") == "neural_network_mlp":
+        scaled = scale_features(features, serving_model["means"], serving_model["stds"])
+        return round(predict_mlp_probability(scaled, serving_model), 4)
+
+    means = serving_model["means"]
+    stds = serving_model["stds"]
+    weights = serving_model["weights"]
+    logit = float(serving_model["intercept"])
 
     for value, mean, std, weight in zip(features, means, stds, weights):
         logit += ((value - mean) / std) * weight
@@ -103,15 +124,19 @@ def predict_probability(candidate: Dict, model: Optional[Dict]) -> Optional[floa
 
 
 def build_ml_contributions(candidate: Dict, model: Dict) -> List[Dict]:
+    serving_model = get_serving_model(model)
+    if serving_model.get("model_type") != "logistic_regression":
+        return build_global_contributions(serving_model)
+
     features = extract_feature_vector(candidate)
     contributions = []
 
     for name, value, mean, std, weight in zip(
         FEATURE_NAMES,
         features,
-        model["means"],
-        model["stds"],
-        model["weights"],
+        serving_model["means"],
+        serving_model["stds"],
+        serving_model["weights"],
     ):
         contribution = ((value - mean) / std) * weight
         contributions.append(
@@ -129,11 +154,50 @@ def build_ml_contributions(candidate: Dict, model: Dict) -> List[Dict]:
     return sorted(contributions, key=lambda item: abs(item["value"]), reverse=True)[:8]
 
 
+def scale_features(features: List[float], means: List[float], stds: List[float]) -> List[float]:
+    return [(value - mean) / std for value, mean, std in zip(features, means, stds)]
+
+
+def predict_tree_probability(tree: Dict, features: List[float]) -> float:
+    node = tree
+    while not node.get("leaf"):
+        feature_index = node["feature_index"]
+        node = node["left"] if features[feature_index] <= node["threshold"] else node["right"]
+    return float(node["probability"])
+
+
+def predict_mlp_probability(features: List[float], model: Dict) -> float:
+    hidden_values = []
+    for weights, hidden_bias in zip(model["hidden_weights"], model["hidden_biases"]):
+        hidden_values.append(sigmoid(hidden_bias + sum(weight * value for weight, value in zip(weights, features))))
+    return sigmoid(model["output_bias"] + sum(weight * value for weight, value in zip(model["output_weights"], hidden_values)))
+
+
+def build_global_contributions(model: Dict) -> List[Dict]:
+    rows = []
+    for row in model.get("feature_weights", [])[:8]:
+        value = float(row.get("weight", 0))
+        rows.append(
+            {
+                "label": FEATURE_LABELS.get(row["feature"], row["feature"]),
+                "value": round(value, 4),
+                "raw_value": 0,
+                "weight": round(value, 4),
+                "kind": "positive" if value > 0 else "negative" if value < 0 else "neutral",
+                "bar_width": min(100, round(abs(value) / 2.5 * 100)),
+                "signed_value": f"{value:+.4f}",
+            }
+        )
+    return rows
+
+
 def attach_ml_prediction(candidate: Dict, model: Optional[Dict]) -> Dict:
     probability = predict_probability(candidate, model)
     candidate["ml_ranker_available"] = probability is not None
     candidate["ml_score"] = probability if probability is not None else 0.0
     candidate["ml_probability_percent"] = round((probability or 0.0) * 100)
-    candidate["ml_score_formula"] = "Supervised Logistic Regression probability learned from pseudo-labeled recipe relevance data."
+    serving_model = get_serving_model(model) if model else {}
+    candidate["ml_model_type"] = serving_model.get("model_type", "unavailable")
+    candidate["ml_score_formula"] = "Supervised model probability learned from pseudo-labeled recipe relevance data."
     candidate["ml_contributions"] = build_ml_contributions(candidate, model) if model else []
     return candidate

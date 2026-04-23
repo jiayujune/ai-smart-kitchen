@@ -338,7 +338,7 @@
                 </div>
                 <div class="metric-card">
                     <span>Supervised Model</span>
-                    <strong style="font-size: 1rem;">{% if report.ml_ranker_available %}Logistic Regression{% else %}Not Trained{% endif %}</strong>
+                    <strong style="font-size: 1rem;">{% if report.ml_ranker_available %}{{ report.ml_model_type }}{% else %}Not Trained{% endif %}</strong>
                 </div>
             </div>
         </section>
@@ -347,8 +347,9 @@
             <section class="panel">
                 <h2>Supervised ML Model</h2>
                 <p>
-                    The ML ranker predicts recipe relevance probability using a Logistic Regression model trained on pseudo-labeled
-                    query and recipe pairs. Positive labels follow the relevance proxy used in this dashboard.
+                    The ML ranker trains three supervised models on pseudo-labeled query and recipe pairs:
+                    Logistic Regression, Decision Tree, and an MLP Neural Network. The app serves the model with the
+                    strongest test F1 score.
                 </p>
                 <div class="meta-grid">
                     <div class="metric-card">
@@ -375,6 +376,34 @@
                             <span>{{ "%+.4f"|format(row.weight) }} | {{ row.direction }}</span>
                         </div>
                     {% endfor %}
+                </div>
+                <div class="table-wrap" style="margin-top: 18px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Train Accuracy</th>
+                                <th>Train F1</th>
+                                <th>Test Accuracy</th>
+                                <th>Test Precision</th>
+                                <th>Test Recall</th>
+                                <th>Test F1</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in report.ml_model_comparison %}
+                                <tr class="{% if model.model_type == report.ml_model_type %}ml-row{% endif %}">
+                                    <td class="ranker-name">{{ model.model_type }}</td>
+                                    <td>{{ "%.3f"|format(model.train_metrics.accuracy) }}</td>
+                                    <td>{{ "%.3f"|format(model.train_metrics.f1) }}</td>
+                                    <td>{{ "%.3f"|format(model.test_metrics.accuracy) }}</td>
+                                    <td>{{ "%.3f"|format(model.test_metrics.precision) }}</td>
+                                    <td>{{ "%.3f"|format(model.test_metrics.recall) }}</td>
+                                    <td>{{ "%.3f"|format(model.test_metrics.f1) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </section>
         {% endif %}
