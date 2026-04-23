@@ -155,6 +155,35 @@ def get_rankers(include_ml_ranker: bool = False) -> Dict[str, Callable[[Dict], t
     return rankers
 
 
+def interpret_generalization(train_f1: float, test_f1: float) -> str:
+    gap = train_f1 - test_f1
+    if test_f1 < 0.8:
+        return "Likely underfitting or needs tuning"
+    if gap > 0.08:
+        return "Possible overfitting"
+    if gap < -0.03:
+        return "Test performance exceeds train split"
+    return "Stable generalization"
+
+
+def build_generalization_rows(model_comparison: List[Dict]) -> List[Dict]:
+    rows = []
+    for model in model_comparison:
+        train_f1 = model["train_metrics"]["f1"]
+        test_f1 = model["test_metrics"]["f1"]
+        gap = round(train_f1 - test_f1, 4)
+        rows.append(
+            {
+                "model_type": model["model_type"],
+                "train_f1": train_f1,
+                "test_f1": test_f1,
+                "gap": gap,
+                "interpretation": interpret_generalization(train_f1, test_f1),
+            }
+        )
+    return rows
+
+
 def run_evaluation(
     recommender: SmartKitchenRecommender = None,
     profile: Dict = None,
@@ -184,6 +213,8 @@ def run_evaluation(
             }
         )
 
+    model_comparison = recommender.ml_ranker.get("model_comparison", []) if recommender.ml_ranker else []
+
     return {
         "top_k": TOP_K,
         "query_count": len(EVALUATION_QUERIES),
@@ -191,7 +222,8 @@ def run_evaluation(
         "ml_model_type": recommender.ml_ranker.get("default_model_type") if recommender.ml_ranker else None,
         "ml_training": recommender.ml_ranker.get("training") if recommender.ml_ranker else None,
         "ml_feature_weights": recommender.ml_ranker.get("feature_weights", []) if recommender.ml_ranker else [],
-        "ml_model_comparison": recommender.ml_ranker.get("model_comparison", []) if recommender.ml_ranker else [],
+        "ml_model_comparison": model_comparison,
+        "ml_generalization_rows": build_generalization_rows(model_comparison),
         "relevance_proxy": "matched>=2, missing<=6, coverage>=0.25, knn>=0.10",
         "candidate_filter": f"knn>={MIN_SCORE}, matched>={MIN_MATCHED_COUNT}, missing<={MAX_MISSING_COUNT}",
         "aggregate_rows": [aggregate(results) for results in per_ranker_results.values()],

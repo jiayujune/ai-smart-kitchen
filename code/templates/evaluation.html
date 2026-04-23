@@ -405,6 +405,30 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="table-wrap" style="margin-top: 18px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Train F1</th>
+                                <th>Test F1</th>
+                                <th>Train-Test Gap</th>
+                                <th>Generalization Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in report.ml_generalization_rows %}
+                                <tr class="{% if row.model_type == report.ml_model_type %}ml-row{% endif %}">
+                                    <td class="ranker-name">{{ row.model_type }}</td>
+                                    <td>{{ "%.3f"|format(row.train_f1) }}</td>
+                                    <td>{{ "%.3f"|format(row.test_f1) }}</td>
+                                    <td>{{ "%+.4f"|format(row.gap) }}</td>
+                                    <td>{{ row.interpretation }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </section>
         {% endif %}
 
