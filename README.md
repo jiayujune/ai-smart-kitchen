@@ -8,7 +8,7 @@ This project builds an AI-powered recipe recommendation system for pantry-first 
 
 ## Developers
 
-- Jiayu
+- Jiayu; Jhanavi; Amruta
 
 ## Highlights
 
