@@ -12,3 +12,4 @@ Current resource notes:
 
 - `model_analysis.md`
 - `Project Guideline 331-630.pdf`
+- `presentation.html`

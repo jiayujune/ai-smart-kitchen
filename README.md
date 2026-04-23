@@ -171,6 +171,8 @@ The model suite compares traditional and neural-network approaches on the same e
 
 Current offline ranking results show that the hybrid explainable ranker is strong for reducing missing ingredients, while the supervised ML ranker preserves high relevance using learned probabilities. The best model can vary as pseudo-labels and user feedback data change, so `train_model.py` stores all trained model metrics and serves the model with the strongest test F1.
 
+The current train-test comparison shows stable generalization for Logistic Regression, the strongest held-out F1 for Decision Tree, and likely underfitting for the MLP Neural Network because its recall and F1 are lower than the traditional models. This is reported in the evaluation dashboard as a train-test gap and interpretation table.
+
 Limitations remain: labels are pseudo-generated rather than collected from real users, evaluation queries are representative but small, and dietary/allergy logic is rule-based rather than medically certified. A natural next step is to collect real user interaction labels from clicks, likes, saves, and ignored recommendations, then retrain and compare the supervised models again.
 
 ## Interface Overview
