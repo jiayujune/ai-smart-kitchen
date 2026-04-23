@@ -1,4 +1,5 @@
 from statistics import mean
+from pathlib import Path
 from typing import Callable, Dict, List
 
 from recommender import SmartKitchenRecommender
@@ -9,6 +10,8 @@ TOP_K = 8
 MIN_SCORE = 0.15
 MIN_MATCHED_COUNT = 2
 MAX_MISSING_COUNT = 6
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data"
 
 EVALUATION_QUERIES = [
     ["egg", "tomato", "rice", "onion"],
@@ -156,8 +159,8 @@ def run_evaluation(
     recommender: SmartKitchenRecommender = None,
     profile: Dict = None,
 ) -> Dict:
-    recommender = recommender or SmartKitchenRecommender("recipes_clean.json")
-    profile = profile if profile is not None else UserPreferenceStore("user_profile.json").snapshot()
+    recommender = recommender or SmartKitchenRecommender(DATA_DIR / "recipes_clean.json")
+    profile = profile if profile is not None else UserPreferenceStore(DATA_DIR / "user_profile.json").snapshot()
     rankers = get_rankers(include_ml_ranker=recommender.ml_ranker is not None)
     per_ranker_results = {name: [] for name in rankers}
     query_results = []
@@ -185,8 +188,10 @@ def run_evaluation(
         "top_k": TOP_K,
         "query_count": len(EVALUATION_QUERIES),
         "ml_ranker_available": recommender.ml_ranker is not None,
+        "ml_model_type": recommender.ml_ranker.get("default_model_type") if recommender.ml_ranker else None,
         "ml_training": recommender.ml_ranker.get("training") if recommender.ml_ranker else None,
         "ml_feature_weights": recommender.ml_ranker.get("feature_weights", []) if recommender.ml_ranker else [],
+        "ml_model_comparison": recommender.ml_ranker.get("model_comparison", []) if recommender.ml_ranker else [],
         "relevance_proxy": "matched>=2, missing<=6, coverage>=0.25, knn>=0.10",
         "candidate_filter": f"knn>={MIN_SCORE}, matched>={MIN_MATCHED_COUNT}, missing<={MAX_MISSING_COUNT}",
         "aggregate_rows": [aggregate(results) for results in per_ranker_results.values()],

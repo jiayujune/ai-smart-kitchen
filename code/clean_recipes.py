@@ -2,6 +2,7 @@ import pandas as pd
 import ast
 import json
 import re
+from pathlib import Path
 
 print("script started")
 
@@ -47,8 +48,10 @@ def clean_ingredient_list(ingredient_list):
 
 
 def main():
-    input_file = "RAW_recipes.csv"
-    output_file = "recipes_clean.json"
+    base_dir = Path(__file__).resolve().parents[1]
+    data_dir = base_dir / "data"
+    input_file = data_dir / "RAW_recipes.csv"
+    output_file = data_dir / "recipes_clean.json"
 
     # 1. Load raw data
     df = pd.read_csv(input_file)
