@@ -1,0 +1,809 @@
+{
+  "model_type": "model_suite",
+  "label_strategy": "pseudo_label_relevance",
+  "default_model_type": "decision_tree",
+  "feature_names": [
+    "knn_score",
+    "cosine_similarity",
+    "jaccard_similarity",
+    "coverage_score",
+    "overlap_score",
+    "matched_count",
+    "missing_count",
+    "total_ingredients",
+    "missing_ratio",
+    "matched_ratio",
+    "calories_scaled",
+    "calories_known",
+    "calorie_bonus",
+    "personalization_bonus"
+  ],
+  "models": [
+    {
+      "model_type": "logistic_regression",
+      "label_strategy": "pseudo_label_relevance",
+      "feature_names": [
+        "knn_score",
+        "cosine_similarity",
+        "jaccard_similarity",
+        "coverage_score",
+        "overlap_score",
+        "matched_count",
+        "missing_count",
+        "total_ingredients",
+        "missing_ratio",
+        "matched_ratio",
+        "calories_scaled",
+        "calories_known",
+        "calorie_bonus",
+        "personalization_bonus"
+      ],
+      "means": [
+        0.24193382,
+        0.26477933,
+        0.15058933,
+        0.20497733,
+        0.3615615,
+        1.44303415,
+        6.54397099,
+        9.59081293,
+        0.66547697,
+        0.16837089,
+        0.34485603,
+        1.0,
+        0.0825204,
+        0.0
+      ],
+      "stds": [
+        0.12435797,
+        0.13191472,
+        0.09565398,
+        0.12795812,
+        0.15886169,
+        0.63648322,
+        3.15696222,
+        3.2706078,
+        0.16590678,
+        0.09756223,
+        0.20201238,
+        1.0,
+        0.0570711,
+        1.0
+      ],
+      "weights": [
+        0.83088028,
+        0.78809415,
+        1.0591288,
+        0.3371069,
+        0.6934367,
+        0.71539476,
+        -0.44215473,
+        -0.21535345,
+        -0.27675474,
+        0.54064052,
+        0.08254631,
+        0.0,
+        0.00252876,
+        0.0
+      ],
+      "intercept": -2.17529361,
+      "training": {
+        "epochs": 700,
+        "learning_rate": 0.08,
+        "l2_penalty": 0.001,
+        "train_examples": 3309,
+        "test_examples": 828,
+        "positive_examples": 1311,
+        "negative_examples": 2826,
+        "train_metrics": {
+          "accuracy": 0.9767,
+          "precision": 0.9316,
+          "recall": 1.0,
+          "f1": 0.9646
+        },
+        "test_metrics": {
+          "accuracy": 0.9698,
+          "precision": 0.9132,
+          "recall": 1.0,
+          "f1": 0.9546
+        }
+      },
+      "feature_weights": [
+        {
+          "feature": "jaccard_similarity",
+          "weight": 1.0591,
+          "direction": "positive"
+        },
+        {
+          "feature": "knn_score",
+          "weight": 0.8309,
+          "direction": "positive"
+        },
+        {
+          "feature": "cosine_similarity",
+          "weight": 0.7881,
+          "direction": "positive"
+        },
+        {
+          "feature": "matched_count",
+          "weight": 0.7154,
+          "direction": "positive"
+        },
+        {
+          "feature": "overlap_score",
+          "weight": 0.6934,
+          "direction": "positive"
+        },
+        {
+          "feature": "matched_ratio",
+          "weight": 0.5406,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_count",
+          "weight": -0.4422,
+          "direction": "negative"
+        },
+        {
+          "feature": "coverage_score",
+          "weight": 0.3371,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_ratio",
+          "weight": -0.2768,
+          "direction": "negative"
+        },
+        {
+          "feature": "total_ingredients",
+          "weight": -0.2154,
+          "direction": "negative"
+        },
+        {
+          "feature": "calories_scaled",
+          "weight": 0.0825,
+          "direction": "positive"
+        },
+        {
+          "feature": "calorie_bonus",
+          "weight": 0.0025,
+          "direction": "positive"
+        },
+        {
+          "feature": "calories_known",
+          "weight": 0.0,
+          "direction": "neutral"
+        },
+        {
+          "feature": "personalization_bonus",
+          "weight": 0.0,
+          "direction": "neutral"
+        }
+      ]
+    },
+    {
+      "model_type": "decision_tree",
+      "label_strategy": "pseudo_label_relevance",
+      "feature_names": [
+        "knn_score",
+        "cosine_similarity",
+        "jaccard_similarity",
+        "coverage_score",
+        "overlap_score",
+        "matched_count",
+        "missing_count",
+        "total_ingredients",
+        "missing_ratio",
+        "matched_ratio",
+        "calories_scaled",
+        "calories_known",
+        "calorie_bonus",
+        "personalization_bonus"
+      ],
+      "tree": {
+        "leaf": false,
+        "feature": "jaccard_similarity",
+        "feature_index": 2,
+        "threshold": 0.18465,
+        "gain": 0.4057,
+        "probability": 0.3167,
+        "samples": 3309,
+        "left": {
+          "leaf": false,
+          "feature": "matched_ratio",
+          "feature_index": 9,
+          "threshold": 0.291667,
+          "gain": 0.003031,
+          "probability": 0.0054,
+          "samples": 2239,
+          "left": {
+            "leaf": false,
+            "feature": "missing_ratio",
+            "feature_index": 8,
+            "threshold": 0.436508,
+            "gain": 1.2e-05,
+            "probability": 0.0005,
+            "samples": 2204,
+            "left": {
+              "leaf": false,
+              "feature": "matched_ratio",
+              "feature_index": 9,
+              "threshold": 0.154762,
+              "gain": 0.001076,
+              "probability": 0.0139,
+              "samples": 72,
+              "left": {
+                "leaf": true,
+                "probability": 0.0,
+                "samples": 53
+              },
+              "right": {
+                "leaf": true,
+                "probability": 0.0526,
+                "samples": 19
+              }
+            },
+            "right": {
+              "leaf": true,
+              "probability": 0.0,
+              "samples": 2132
+            }
+          },
+          "right": {
+            "leaf": true,
+            "probability": 0.3143,
+            "samples": 35
+          }
+        },
+        "right": {
+          "leaf": false,
+          "feature": "missing_count",
+          "feature_index": 6,
+          "threshold": 6.5,
+          "gain": 0.035713,
+          "probability": 0.9682,
+          "samples": 1070,
+          "left": {
+            "leaf": false,
+            "feature": "missing_count",
+            "feature_index": 6,
+            "threshold": 1.5,
+            "gain": 0.005837,
+            "probability": 0.9867,
+            "samples": 1050,
+            "left": {
+              "leaf": false,
+              "feature": "matched_ratio",
+              "feature_index": 9,
+              "threshold": 0.3875,
+              "gain": 0.057616,
+              "probability": 0.75,
+              "samples": 52,
+              "left": {
+                "leaf": true,
+                "probability": 0.5263,
+                "samples": 19
+              },
+              "right": {
+                "leaf": true,
+                "probability": 0.8788,
+                "samples": 33
+              }
+            },
+            "right": {
+              "leaf": false,
+              "feature": "total_ingredients",
+              "feature_index": 7,
+              "threshold": 5.5,
+              "gain": 5.2e-05,
+              "probability": 0.999,
+              "samples": 998,
+              "left": {
+                "leaf": true,
+                "probability": 0.973,
+                "samples": 37
+              },
+              "right": {
+                "leaf": true,
+                "probability": 1.0,
+                "samples": 961
+              }
+            }
+          },
+          "right": {
+            "leaf": true,
+            "probability": 0.0,
+            "samples": 20
+          }
+        }
+      },
+      "training": {
+        "max_depth": 5,
+        "min_samples": 18,
+        "train_examples": 3309,
+        "test_examples": 828,
+        "positive_examples": 1311,
+        "negative_examples": 2826,
+        "train_metrics": {
+          "accuracy": 0.9921,
+          "precision": 0.9867,
+          "recall": 0.9885,
+          "f1": 0.9876
+        },
+        "test_metrics": {
+          "accuracy": 0.9879,
+          "precision": 0.9738,
+          "recall": 0.9886,
+          "f1": 0.9811
+        }
+      },
+      "feature_weights": [
+        {
+          "feature": "jaccard_similarity",
+          "weight": 1342.4613,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_count",
+          "weight": 44.3418,
+          "direction": "positive"
+        },
+        {
+          "feature": "matched_ratio",
+          "weight": 9.8599,
+          "direction": "positive"
+        },
+        {
+          "feature": "total_ingredients",
+          "weight": 0.0519,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_ratio",
+          "weight": 0.0264,
+          "direction": "positive"
+        }
+      ]
+    },
+    {
+      "model_type": "neural_network_mlp",
+      "label_strategy": "pseudo_label_relevance",
+      "feature_names": [
+        "knn_score",
+        "cosine_similarity",
+        "jaccard_similarity",
+        "coverage_score",
+        "overlap_score",
+        "matched_count",
+        "missing_count",
+        "total_ingredients",
+        "missing_ratio",
+        "matched_ratio",
+        "calories_scaled",
+        "calories_known",
+        "calorie_bonus",
+        "personalization_bonus"
+      ],
+      "means": [
+        0.24193382,
+        0.26477933,
+        0.15058933,
+        0.20497733,
+        0.3615615,
+        1.44303415,
+        6.54397099,
+        9.59081293,
+        0.66547697,
+        0.16837089,
+        0.34485603,
+        1.0,
+        0.0825204,
+        0.0
+      ],
+      "stds": [
+        0.12435797,
+        0.13191472,
+        0.09565398,
+        0.12795812,
+        0.15886169,
+        0.63648322,
+        3.15696222,
+        3.2706078,
+        0.16590678,
+        0.09756223,
+        0.20201238,
+        1.0,
+        0.0570711,
+        1.0
+      ],
+      "hidden_units": 8,
+      "hidden_weights": [
+        [
+          0.6035536,
+          0.58749748,
+          0.69140663,
+          0.16267802,
+          0.59435436,
+          0.59885621,
+          -0.3990838,
+          -0.09703773,
+          -0.24356047,
+          0.27734264,
+          0.00653754,
+          0.0,
+          -0.12609396,
+          0.0
+        ],
+        [
+          -0.43924182,
+          -0.4381783,
+          -0.4414816,
+          0.14220887,
+          -0.78989594,
+          -0.79654164,
+          -0.19997114,
+          -0.37901623,
+          -0.18340896,
+          -0.05806932,
+          -0.05699379,
+          0.0,
+          0.06750632,
+          -0.0
+        ],
+        [
+          0.2128434,
+          0.18968006,
+          0.34696019,
+          0.52730879,
+          -0.52839526,
+          -0.52546813,
+          -0.94410173,
+          -0.80117071,
+          -0.72496619,
+          0.34675429,
+          -0.1044743,
+          0.0,
+          -0.08968844,
+          0.0
+        ],
+        [
+          -0.1547207,
+          -0.13067754,
+          -0.29390869,
+          -0.49009796,
+          0.59575886,
+          0.59320756,
+          0.95384962,
+          0.85060582,
+          0.67976156,
+          -0.31736421,
+          0.1097288,
+          0.0,
+          0.07709869,
+          -0.0
+        ],
+        [
+          0.23141172,
+          0.20924945,
+          0.35975342,
+          0.52747281,
+          -0.4942249,
+          -0.4908813,
+          -0.91766915,
+          -0.77868582,
+          -0.70067682,
+          0.35679859,
+          -0.10110277,
+          0.0,
+          -0.08726496,
+          -0.0
+        ],
+        [
+          -0.43515688,
+          -0.43453265,
+          -0.43492908,
+          0.14093674,
+          -0.79093057,
+          -0.79763861,
+          -0.21606446,
+          -0.39164532,
+          -0.18917979,
+          -0.05815023,
+          -0.05872633,
+          0.0,
+          0.06607323,
+          0.0
+        ],
+        [
+          0.61115508,
+          0.59444629,
+          0.70340679,
+          0.29076966,
+          0.4681518,
+          0.47358177,
+          -0.4872715,
+          -0.20472964,
+          -0.32458641,
+          0.38814386,
+          0.00192595,
+          0.0,
+          -0.1188204,
+          -0.0
+        ],
+        [
+          -0.4618891,
+          -0.45779255,
+          -0.48117243,
+          0.15049761,
+          -0.78011027,
+          -0.78637049,
+          -0.10318346,
+          -0.3030675,
+          -0.14859427,
+          -0.05681894,
+          -0.04708196,
+          -0.0,
+          0.07680185,
+          0.0
+        ]
+      ],
+      "hidden_biases": [
+        -2.10233434,
+        0.00465084,
+        0.22689044,
+        -0.66594989,
+        0.07725076,
+        -0.0510917,
+        -2.16931807,
+        0.32931129
+      ],
+      "output_weights": [
+        1.6952027,
+        -1.92460631,
+        1.69974966,
+        -2.14165555,
+        1.65134067,
+        -1.92305219,
+        1.69348965,
+        -1.93476993
+      ],
+      "output_bias": -3.78618428,
+      "training": {
+        "epochs": 260,
+        "learning_rate": 0.035,
+        "l2_penalty": 0.001,
+        "train_examples": 3309,
+        "test_examples": 828,
+        "positive_examples": 1311,
+        "negative_examples": 2826,
+        "train_metrics": {
+          "accuracy": 0.9142,
+          "precision": 1.0,
+          "recall": 0.729,
+          "f1": 0.8433
+        },
+        "test_metrics": {
+          "accuracy": 0.9046,
+          "precision": 1.0,
+          "recall": 0.6996,
+          "f1": 0.8233
+        }
+      },
+      "feature_weights": [
+        {
+          "feature": "jaccard_similarity",
+          "weight": 6.7936,
+          "direction": "positive"
+        },
+        {
+          "feature": "knn_score",
+          "weight": 5.7093,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_count",
+          "weight": -5.6647,
+          "direction": "negative"
+        },
+        {
+          "feature": "cosine_similarity",
+          "weight": 5.5151,
+          "direction": "positive"
+        },
+        {
+          "feature": "missing_ratio",
+          "weight": -3.8034,
+          "direction": "negative"
+        },
+        {
+          "feature": "matched_count",
+          "weight": 3.4313,
+          "direction": "positive"
+        },
+        {
+          "feature": "overlap_score",
+          "weight": 3.3608,
+          "direction": "positive"
+        },
+        {
+          "feature": "matched_ratio",
+          "weight": 3.3193,
+          "direction": "positive"
+        },
+        {
+          "feature": "total_ingredients",
+          "weight": -2.9116,
+          "direction": "negative"
+        },
+        {
+          "feature": "coverage_score",
+          "weight": 2.7492,
+          "direction": "positive"
+        },
+        {
+          "feature": "calorie_bonus",
+          "weight": -1.2822,
+          "direction": "negative"
+        },
+        {
+          "feature": "calories_scaled",
+          "weight": -0.2515,
+          "direction": "negative"
+        },
+        {
+          "feature": "calories_known",
+          "weight": -0.0,
+          "direction": "negative"
+        },
+        {
+          "feature": "personalization_bonus",
+          "weight": -0.0,
+          "direction": "negative"
+        }
+      ]
+    }
+  ],
+  "model_comparison": [
+    {
+      "model_type": "logistic_regression",
+      "train_metrics": {
+        "accuracy": 0.9767,
+        "precision": 0.9316,
+        "recall": 1.0,
+        "f1": 0.9646
+      },
+      "test_metrics": {
+        "accuracy": 0.9698,
+        "precision": 0.9132,
+        "recall": 1.0,
+        "f1": 0.9546
+      }
+    },
+    {
+      "model_type": "decision_tree",
+      "train_metrics": {
+        "accuracy": 0.9921,
+        "precision": 0.9867,
+        "recall": 0.9885,
+        "f1": 0.9876
+      },
+      "test_metrics": {
+        "accuracy": 0.9879,
+        "precision": 0.9738,
+        "recall": 0.9886,
+        "f1": 0.9811
+      }
+    },
+    {
+      "model_type": "neural_network_mlp",
+      "train_metrics": {
+        "accuracy": 0.9142,
+        "precision": 1.0,
+        "recall": 0.729,
+        "f1": 0.8433
+      },
+      "test_metrics": {
+        "accuracy": 0.9046,
+        "precision": 1.0,
+        "recall": 0.6996,
+        "f1": 0.8233
+      }
+    }
+  ],
+  "training": {
+    "max_depth": 5,
+    "min_samples": 18,
+    "train_examples": 3309,
+    "test_examples": 828,
+    "positive_examples": 1311,
+    "negative_examples": 2826,
+    "train_metrics": {
+      "accuracy": 0.9921,
+      "precision": 0.9867,
+      "recall": 0.9885,
+      "f1": 0.9876
+    },
+    "test_metrics": {
+      "accuracy": 0.9879,
+      "precision": 0.9738,
+      "recall": 0.9886,
+      "f1": 0.9811
+    }
+  },
+  "feature_weights": [
+    {
+      "feature": "jaccard_similarity",
+      "weight": 1342.4613,
+      "direction": "positive"
+    },
+    {
+      "feature": "missing_count",
+      "weight": 44.3418,
+      "direction": "positive"
+    },
+    {
+      "feature": "matched_ratio",
+      "weight": 9.8599,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_ingredients",
+      "weight": 0.0519,
+      "direction": "positive"
+    },
+    {
+      "feature": "missing_ratio",
+      "weight": 0.0264,
+      "direction": "positive"
+    }
+  ],
+  "means": [
+    0.24193382,
+    0.26477933,
+    0.15058933,
+    0.20497733,
+    0.3615615,
+    1.44303415,
+    6.54397099,
+    9.59081293,
+    0.66547697,
+    0.16837089,
+    0.34485603,
+    1.0,
+    0.0825204,
+    0.0
+  ],
+  "stds": [
+    0.12435797,
+    0.13191472,
+    0.09565398,
+    0.12795812,
+    0.15886169,
+    0.63648322,
+    3.15696222,
+    3.2706078,
+    0.16590678,
+    0.09756223,
+    0.20201238,
+    1.0,
+    0.0570711,
+    1.0
+  ],
+  "weights": [
+    0.83088028,
+    0.78809415,
+    1.0591288,
+    0.3371069,
+    0.6934367,
+    0.71539476,
+    -0.44215473,
+    -0.21535345,
+    -0.27675474,
+    0.54064052,
+    0.08254631,
+    0.0,
+    0.00252876,
+    0.0
+  ],
+  "intercept": -2.17529361
+}
