@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 from urllib import error, request as urlrequest
 
-from flask import Flask, abort, jsonify, render_template, request, session
+from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 
 from evaluation import run_evaluation
 from recommender import SmartKitchenRecommender
@@ -333,6 +333,53 @@ def evaluation_dashboard():
         profile=preferences.snapshot(),
     )
     return render_template("evaluation.html", report=report)
+
+
+def build_saved_recipe_list(recipe_ids: List[int], profile: Dict) -> List[Dict]:
+    liked_ids = set(profile.get("liked_recipes", []))
+    favorite_ids = set(profile.get("favorites", []))
+    items = []
+
+    for recipe_id in recipe_ids:
+        recipe = recommender.get_recipe_by_id(recipe_id)
+        if not recipe:
+            continue
+
+        recipe_copy = dict(recipe)
+        recipe_copy["calories"] = recommender.extract_calories(recipe.get("nutrition", []))
+        recipe_copy["is_liked"] = recipe_id in liked_ids
+        recipe_copy["is_favorite"] = recipe_id in favorite_ids
+        recipe_copy["matched_ingredients"] = []
+        recipe_copy["missing_ingredients"] = []
+        recipe_copy["explanation"] = "Saved in your personal Smart Kitchen collection for quick access."
+        items.append(recipe_copy)
+
+    return items
+
+
+@app.route("/my-recipes", methods=["GET", "POST"])
+def my_recipes():
+    if request.method == "POST":
+        action = request.form.get("action", "").strip()
+        recipe_id_raw = request.form.get("recipe_id", "").strip()
+        if action in {"toggle_like", "toggle_favorite"} and recipe_id_raw.isdigit():
+            recipe = recommender.get_recipe_by_id(int(recipe_id_raw))
+            if recipe:
+                if action == "toggle_like":
+                    preferences.toggle_like(recipe)
+                else:
+                    preferences.toggle_favorite(recipe)
+        return redirect(url_for("my_recipes"))
+
+    profile = preferences.snapshot()
+    liked_ids = profile.get("liked_recipes", [])
+    favorite_ids = profile.get("favorites", [])
+
+    return render_template(
+        "my_recipes.html",
+        liked_recipes=build_saved_recipe_list(liked_ids, profile),
+        favorite_recipes=build_saved_recipe_list(favorite_ids, profile),
+    )
 
 
 @app.route("/recipe/<int:recipe_id>")

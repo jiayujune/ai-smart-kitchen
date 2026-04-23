@@ -18,6 +18,7 @@ This project builds an AI-powered recipe recommendation system for pantry-first 
 - Smart pantry staples so common household items do not clutter missing-ingredient lists
 - Missing-ingredient substitution suggestions with pantry-aware highlights
 - Like, save, and recent-search history to make recommendations feel more personal over time
+- Dedicated `My Recipes` page for liked and saved recipes
 - Recipe detail pages with matched ingredients, missing ingredients, nutrition, and steps
 - Explainable AI score breakdowns for every recommendation
 - Three supervised ML models trained from pseudo-labeled recipe relevance data
@@ -180,6 +181,7 @@ The current web app is designed like a compact AI control console instead of a p
 - HUD-style search panel with dark glass surfaces and cyan/blue highlights
 - Sortable recommendation cards with match, missing, calorie, and personalization signals
 - Substitution panels for missing ingredients, including pantry-matched alternatives
+- My Recipes vault for revisiting liked and saved recipes
 - Recent searches with per-item deletion
 - Pantry staple management for everyday kitchen defaults
 - AI assistant panel with:
