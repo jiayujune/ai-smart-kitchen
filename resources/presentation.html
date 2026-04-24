@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Kitchen Presentation</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --panel: rgba(15, 23, 42, 0.86);
+            --ink: #e5f2ff;
+            --muted: #a9b7c8;
+            --line: rgba(34, 211, 238, 0.28);
+            --accent: #22d3ee;
+            --green: #86efac;
+            --orange: #fdba74;
+            --shadow: 0 30px 80px rgba(2, 8, 23, 0.55);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 14% 12%, rgba(34, 211, 238, 0.16), transparent 28%),
+                radial-gradient(circle at 84% 18%, rgba(14, 165, 233, 0.12), transparent 28%),
+                linear-gradient(180deg, #020617, #081223 52%, #0f172a);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+            background-size: 36px 36px;
+            opacity: 0.38;
+        }
+
+        .deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: none;
+            padding: 54px 72px 76px;
+        }
+
+        .slide.active {
+            display: grid;
+            align-content: center;
+        }
+
+        .slide-inner {
+            width: min(1180px, 100%);
+            margin: 0 auto;
+            padding: 36px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 47, 73, 0.24));
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-inner::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.08), transparent),
+                linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 6px;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .kicker {
+            color: var(--accent);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-size: 0.84rem;
+            margin-bottom: 14px;
+        }
+
+        h1,
+        h2 {
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 7vw, 6rem);
+            line-height: 0.92;
+            max-width: 12ch;
+        }
+
+        h2 {
+            font-size: clamp(2.1rem, 4.6vw, 4rem);
+            line-height: 0.98;
+            margin-bottom: 24px;
+        }
+
+        h3 {
+            margin: 0 0 10px;
+            font-size: 1.25rem;
+            color: var(--ink);
+        }
+
+        p {
+            color: var(--muted);
+            font-size: 1.15rem;
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        ul,
+        ol {
+            margin: 0;
+            padding-left: 24px;
+            color: var(--muted);
+            font-size: 1.1rem;
+            line-height: 1.62;
+        }
+
+        li + li {
+            margin-top: 7px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(2, 6, 23, 0.38);
+        }
+
+        .metric {
+            display: block;
+            color: var(--accent);
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .pill {
+            display: inline-flex;
+            padding: 9px 13px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--accent);
+            background: rgba(8, 47, 73, 0.26);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.86rem;
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .flow .step {
+            min-height: 116px;
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(2, 6, 23, 0.34);
+            display: grid;
+            align-content: center;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--ink);
+            font-size: 1rem;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        th,
+        td {
+            padding: 13px 14px;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.18);
+            text-align: left;
+        }
+
+        th {
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-size: 0.84rem;
+            background: rgba(2, 6, 23, 0.42);
+        }
+
+        .highlight td {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .note {
+            margin-top: 18px;
+            color: var(--orange);
+            font-weight: 800;
+        }
+
+        .controls {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 0.9rem;
+            z-index: 5;
+        }
+
+        .controls button {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.88);
+            color: var(--ink);
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .progress {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            height: 4px;
+            background: var(--accent);
+            width: 0;
+            z-index: 6;
+            box-shadow: 0 0 16px rgba(34, 211, 238, 0.8);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 0.95fr 1.05fr;
+            gap: 26px;
+            align-items: center;
+        }
+
+        .big-quote {
+            font-size: 1.6rem;
+            color: var(--ink);
+            line-height: 1.45;
+            font-weight: 800;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                overflow: auto;
+            }
+
+            .slide {
+                position: relative;
+                min-height: 100vh;
+                padding: 22px;
+            }
+
+            .grid,
+            .grid.three,
+            .two-col,
+            .flow {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            body {
+                overflow: visible;
+                background: white;
+                color: black;
+            }
+
+            .slide {
+                display: block !important;
+                position: relative;
+                height: 100vh;
+                page-break-after: always;
+            }
+
+            .controls,
+            .progress {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="deck">
+        <section class="slide active">
+            <div class="slide-inner">
+                <div class="content two-col">
+                    <div>
+                        <div class="kicker">CSCI 630 Group Project</div>
+                        <h1>AI Smart Kitchen</h1>
+                        <div class="pill-row">
+                            <span class="pill">Pantry-first recipes</span>
+                            <span class="pill">Supervised ML ranking</span>
+                            <span class="pill">Explainable AI</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Presentation Info</h3>
+                        <p>Course: CSCI 630<br>University: Rochester Institute of Technology<br>Presenter: Jiayu<br>Date: April 2026</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Understanding the Problem</div>
+                    <h2>What can I cook with what I already have?</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>User Problem</h3>
+                            <ul>
+                                <li>People have ingredients at home but do not know what to cook.</li>
+                                <li>Most recipe apps start from recipes, not pantry constraints.</li>
+                                <li>Users need realistic options with missing items and substitutions.</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Project Hypothesis</h3>
+                            <p>Combining ingredient similarity, nutrition signals, user preferences, and supervised ranking can produce more useful recipe recommendations than simple keyword search.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Project Goals</div>
+                    <h2>From pantry input to explainable recommendations</h2>
+                    <div class="grid three">
+                        <div class="card"><span class="metric">1</span><p>Recommend recipes from available ingredients.</p></div>
+                        <div class="card"><span class="metric">2</span><p>Rank by similarity, missing items, nutrition, and preferences.</p></div>
+                        <div class="card"><span class="metric">3</span><p>Compare multiple AI/ML models and show evaluation results.</p></div>
+                    </div>
+                    <div class="pill-row">
+                        <span class="pill">Dietary filters</span>
+                        <span class="pill">Substitutions</span>
+                        <span class="pill">My Recipes vault</span>
+                        <span class="pill">AI assistant</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Dataset</div>
+                    <h2>Recipe data and preprocessing</h2>
+                    <div class="flow">
+                        <div class="step">RAW_recipes.csv</div>
+                        <div class="step">clean_recipes.py</div>
+                        <div class="step">recipes_clean.json</div>
+                        <div class="step">Feature engineering</div>
+                        <div class="step">Ranking models</div>
+                    </div>
+                    <div class="grid" style="margin-top: 22px;">
+                        <div class="card">
+                            <h3>Main Fields</h3>
+                            <ul>
+                                <li>Recipe id and name</li>
+                                <li>Ingredients</li>
+                                <li>Nutrition vector</li>
+                                <li>Preparation steps</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Preprocessing</h3>
+                            <ul>
+                                <li>Parsed list-like ingredient and step fields.</li>
+                                <li>Removed invalid or empty records.</li>
+                                <li>Normalized ingredient text and synonyms.</li>
+                                <li>Filtered recipes by ingredient count.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">System Architecture</div>
+                    <h2>End-to-end recommendation pipeline</h2>
+                    <div class="flow">
+                        <div class="step">User pantry input</div>
+                        <div class="step">Normalize ingredients</div>
+                        <div class="step">Generate recipe candidates</div>
+                        <div class="step">Score with rankers</div>
+                        <div class="step">Explain results</div>
+                    </div>
+                    <div class="grid" style="margin-top: 22px;">
+                        <div class="card">
+                            <h3>Implementation Files</h3>
+                            <ul>
+                                <li>code/app.py</li>
+                                <li>code/recommender.py</li>
+                                <li>code/train_model.py</li>
+                                <li>code/evaluation.py</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Repository Structure</h3>
+                            <ul>
+                                <li>code/: app, ML scripts, templates</li>
+                                <li>data/: cleaned dataset and model artifact</li>
+                                <li>resources/: analysis and presentation material</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Feature Engineering</div>
+                    <h2>Turning recipe matches into ML features</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Feature</th><th>Meaning</th><th>Why it matters</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>KNN / Cosine / Jaccard</td><td>Ingredient similarity</td><td>Measures pantry-recipe fit</td></tr>
+                            <tr><td>Coverage / Overlap</td><td>Recipe ingredients covered by pantry</td><td>Rewards practical recipes</td></tr>
+                            <tr><td>Matched / Missing Count</td><td>Available vs. needed ingredients</td><td>Controls shopping burden</td></tr>
+                            <tr><td>Calories / Nutrition</td><td>Nutrition profile</td><td>Supports health-aware ranking</td></tr>
+                            <tr><td>Personalization Bonus</td><td>Likes, saves, frequent ingredients</td><td>Adapts to user history</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">AI / ML Algorithms</div>
+                    <h2>Models compared</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Method</th><th>Type</th><th>Role</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Baseline matched count</td><td>Rule baseline</td><td>Simple comparison point</td></tr>
+                            <tr><td>Jaccard / KNN similarity</td><td>Content-based recommender</td><td>Ingredient matching</td></tr>
+                            <tr><td>Hybrid explainable score</td><td>Heuristic ranking</td><td>Balances similarity, missing items, calories, personalization</td></tr>
+                            <tr><td>Logistic Regression</td><td>Traditional supervised ML</td><td>Interpretable relevance probability</td></tr>
+                            <tr><td>Decision Tree</td><td>Traditional supervised ML</td><td>Non-linear feature splits</td></tr>
+                            <tr><td>MLP Neural Network</td><td>Neural network</td><td>Feature interaction learning</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Supervised Learning Setup</div>
+                    <h2>Query + recipe becomes a training example</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>Input</h3>
+                            <p>User pantry query + candidate recipe</p>
+                            <div class="pill-row">
+                                <span class="pill">egg</span>
+                                <span class="pill">tomato</span>
+                                <span class="pill">rice</span>
+                                <span class="pill">onion</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Pseudo-label Rule</h3>
+                            <ul>
+                                <li>matched_count >= 2</li>
+                                <li>missing_count <= 6</li>
+                                <li>coverage_score >= 0.25</li>
+                                <li>knn_score >= 0.10</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="note">This creates a supervised ML pipeline even without manually collected user ratings.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Evaluation Method</div>
+                    <h2>Classification and recommendation metrics</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>Supervised Model Metrics</h3>
+                            <ul>
+                                <li>Train/test accuracy</li>
+                                <li>Precision</li>
+                                <li>Recall</li>
+                                <li>F1 score</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Ranking Metrics</h3>
+                            <ul>
+                                <li>Precision@8</li>
+                                <li>Average missing ingredients</li>
+                                <li>Average match percentage</li>
+                                <li>Average final score</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="note">The /evaluation dashboard shows both model metrics and recommendation ranking behavior.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Results</div>
+                    <h2>Supervised model comparison</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Model</th><th>Test Accuracy</th><th>Test Precision</th><th>Test Recall</th><th>Test F1</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Logistic Regression</td><td>0.9685</td><td>0.9094</td><td>1.0000</td><td>0.9526</td></tr>
+                            <tr class="highlight"><td>Decision Tree</td><td>0.9863</td><td>0.9825</td><td>0.9740</td><td>0.9783</td></tr>
+                            <tr><td>MLP Neural Network</td><td>0.8892</td><td>1.0000</td><td>0.6494</td><td>0.7874</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="note">Decision Tree achieved the strongest test F1 score and is selected as the default supervised ML ranker.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Generalization Analysis</div>
+                    <h2>Detecting underfitting and overfitting</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Model</th><th>Train F1</th><th>Test F1</th><th>Interpretation</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Logistic Regression</td><td>0.9649</td><td>0.9526</td><td>Small gap; stable generalization</td></tr>
+                            <tr class="highlight"><td>Decision Tree</td><td>High</td><td>0.9783</td><td>Best held-out F1; selected as serving model</td></tr>
+                            <tr><td>MLP Neural Network</td><td>Lower</td><td>0.7874</td><td>Likely underfitting or needs more tuning</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="note">The MLP has high precision but low recall, so it misses too many relevant recipes. More tuning or more data would likely improve it.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Critical Analysis</div>
+                    <h2>Best classifier is not always the best recommender</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>Hybrid Score Strength</h3>
+                            <p>Explicitly rewards practical cooking constraints, especially fewer missing ingredients and transparent score components.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Supervised ML Strength</h3>
+                            <p>Learns relevance probability from engineered features and compares traditional and neural-network models.</p>
+                        </div>
+                    </div>
+                    <p class="note">Classification F1 and user-facing ranking utility can disagree, so both evaluation views are important.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Application Demo</div>
+                    <h2>What to show live</h2>
+                    <ol>
+                        <li>Open the home page and search: <strong>egg, tomato, rice, onion</strong>.</li>
+                        <li>Switch sorting to <strong>ML Ranker</strong>.</li>
+                        <li>Open a recipe detail page and show explainable scoring.</li>
+                        <li>Save or like a recipe, then open <strong>My Recipes</strong>.</li>
+                        <li>Open <strong>/evaluation</strong> to show model comparison.</li>
+                    </ol>
+                    <div class="pill-row">
+                        <span class="pill">Dietary filters</span>
+                        <span class="pill">Substitutions</span>
+                        <span class="pill">AI assistant</span>
+                        <span class="pill">Evaluation dashboard</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Conclusion</div>
+                    <h2>Limitations and future work</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>Limitations</h3>
+                            <ul>
+                                <li>Pseudo-labels instead of real user ratings</li>
+                                <li>Limited evaluation query set</li>
+                                <li>Rule-based dietary and allergy filtering</li>
+                                <li>Simple neural network without extensive tuning</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Future Work</h3>
+                            <ul>
+                                <li>Use clicks, likes, saves, and ignores as real labels</li>
+                                <li>Add cross-validation and hyperparameter tuning</li>
+                                <li>Evaluate NDCG@K or MAP@K</li>
+                                <li>Deploy a hosted demo</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="content">
+                    <div class="kicker">Acknowledgements</div>
+                    <h2>Team and resources</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>Contributors</h3>
+                            <ul>
+                                <li>Jiayu: ML ranking, evaluation dashboard, project structure</li>
+                                <li>Jhanavi: My Recipes collection concept and UI contribution</li>
+                                <li>Add other teammates and contribution notes here</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Tools</h3>
+                            <ul>
+                                <li>Python, Flask, Pandas</li>
+                                <li>HTML, CSS, JavaScript</li>
+                                <li>Recipe dataset from RAW_recipes.csv</li>
+                                <li>Groq-hosted chat completion API</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="controls">
+        <button type="button" id="prevBtn">Prev</button>
+        <span id="counter">1 / 14</span>
+        <button type="button" id="nextBtn">Next</button>
+    </div>
+    <div class="progress" id="progress"></div>
+
+    <script>
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const counter = document.getElementById("counter");
+        const progress = document.getElementById("progress");
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        let current = 0;
+
+        function showSlide(index) {
+            current = Math.max(0, Math.min(slides.length - 1, index));
+            slides.forEach((slide, slideIndex) => {
+                slide.classList.toggle("active", slideIndex === current);
+            });
+            counter.textContent = `${current + 1} / ${slides.length}`;
+            progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+        }
+
+        function nextSlide() {
+            showSlide(current + 1);
+        }
+
+        function prevSlide() {
+            showSlide(current - 1);
+        }
+
+        nextBtn.addEventListener("click", nextSlide);
+        prevBtn.addEventListener("click", prevSlide);
+
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowRight" || event.key === " " || event.key === "PageDown") {
+                event.preventDefault();
+                nextSlide();
+            }
+            if (event.key === "ArrowLeft" || event.key === "PageUp") {
+                event.preventDefault();
+                prevSlide();
+            }
+            if (event.key.toLowerCase() === "f") {
+                document.documentElement.requestFullscreen?.();
+            }
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
