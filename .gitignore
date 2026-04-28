@@ -210,3 +210,5 @@ __marimo__/
 RAW_recipes.csv
 recipes_clean.json
 user_profile.json
+data/raw/
+data/processed/
